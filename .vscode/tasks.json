@@ -1,0 +1,96 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build",
+			"type": "cppbuild",
+			"command": "/usr/bin/gcc",
+			"args": [
+				"-o",
+				"${workspaceFolder}/../bin/${workspaceFolderBasename}_tests",
+				"${workspaceFolder}/*.c",
+				"-l_string",
+				"-l_except"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "compiler: gcc"
+		},
+		{
+			"label": "build debug",
+			"type": "cppbuild",
+			"command": "/usr/bin/gcc",
+			"args": [
+				"-g3",
+				"-o",
+				"${workspaceFolder}/../bin/${workspaceFolderBasename}_dbg_tests",
+				"${workspaceFolder}/*.c",
+				"-l_string",
+				"-l_except"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: gcc"
+		},
+		{
+			"label": "build so",
+			"type": "cppbuild",
+			"command": "/usr/bin/gcc",
+			"args": [
+				"-shared",
+				"-fpic",
+				"-o",
+				"${workspaceFolder}/../shared/lib_${workspaceFolderBasename}.so",
+				"${workspaceFolder}/${workspaceFolderBasename}*.c",
+				"-l_string"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "compiler: gcc"
+		},
+		{
+			"label": "debug so",
+			"type": "cppbuild",
+			"command": "/usr/bin/gcc",
+			"args": [
+				"-g3",
+				"-o",
+				"${workspaceFolder}/../bin/shared_dbg_${workspaceFolderBasename}",
+				"${workspaceFolder}/test.c",
+				"-l_string",
+				"-l_except",
+				"-l_${workspaceFolderBasename}"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build",
+			"detail": "compiler: gcc"
+		},
+		{
+			"label": "dependencies",
+			"type": "process",
+			"command": "/usr/bin/ldd",
+			"args": [
+				"${workspaceFolder}/../bin/shared_dbg_${workspaceFolderBasename}"
+			],
+			"dependsOn": [
+				"debug so"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "test",
+			"detail": "linker info: ldd"
+		}
+	]
+}
