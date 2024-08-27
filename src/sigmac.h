@@ -7,14 +7,40 @@
 #ifndef _SIGMAC_H_
 #define _SIGMAC_H_
 
-#include "version.h"
+#include "open/io.h"
+
+#include "../core/version.h"
+
 #include "codex.h"
 
-enum sc_opt_type {
-	SC_OPT_SOURCE = 0,
-	SC_OPT_OUTPUT = 1,
-	SC_OPT_LOGOUT = 2,
+//	built-in option type
+enum bi_opt_type
+{
+	SOURCE = 0,
+	OUTPUT = 1,
+	LOGDEST = 2,
 };
+
+//	key option type - e.g., '-i', '-o', etc
+enum key_opt
+{
+	OPTKEY_1D10T = 0,
+	OPTKEY_OUTPUT = 1,
+	OPTKEY_SOURCE = 2,
+};
+//	tag option type - e.g., '--help', '--info', etc
+enum tag_opt
+{
+	OPTTAG_HELP = 0,
+	OPTTAG_INFO = 1,
+	OPTTAG_VERSION = 2,
+	OPTTAG_DEFAULT = 3,
+};
+enum nop_opt
+{
+	OPT_NO_OP
+};
+//	option type - key or tag
 
 /*
  * sc_opt_param: parameter container for command line args
@@ -22,24 +48,33 @@ enum sc_opt_type {
  * 1.	file parameter for source option				/dir/file.C
  * 2.	log dir parameter for log (-l) option			-l:../logs/
  */
-struct sc_opt_param {
-	enum sc_opt_type type;
+struct sc_opt_param
+{
+	enum bi_opt_type type;
 	char *params;
 
 	//	sc_opt_type will tell us which member of each union to access
 	//	TODO: io_type_properties (???)
 };
-typedef bool(*config)(struct sc_opt_param*);
-
+typedef bool (*config)(struct sc_opt_param *);
 
 /*
  * sc_opt: command line argument structure
  */
-struct sc_opt {
-	//	single character switch option; ex: -<h>
-	char key;
-	//	word option; ex: --<help>
-	char *tag;
+struct sc_opt
+{
+	enum
+	{
+		OPT_NOP = -1,
+		OPT_TAG = 0,
+		OPT_KEY = 1
+	} opt_type;
+	union
+	{
+		enum nop_opt nop;
+		enum key_opt key;
+		enum tag_opt tag;
+	} option;
 	//	delegate to configure the option
 	config configure;
 	//	description (for help menu)
@@ -48,7 +83,8 @@ struct sc_opt {
 	struct sc_opt_param *param;
 };
 
-struct sigc {
+struct sigc
+{
 	//	compiler name
 	const char *name;
 	//	compiler version
@@ -56,22 +92,23 @@ struct sigc {
 	//	number of configuration arguments
 	int cfgc;
 	//	delegate handler to load options
-	bool (*load)(char**);
+	bool (*load)(char **);
 	//	collection of sc_opt objects
 	struct sc_opt *options;
 	//	delegate handler to configure the compiler
 	bool (*configure)(void);
 	//	current working dir is what the CL path is
-	char *cwd;
+	directory *cwd;
 	//	the path from which sigmac executes
-	char *path;
+	string *path;
 	/*
 	 * TODO:
 	 *	add exit mode - SILENT, WHISPER, SHOUT, SCREAM
 	 */
 };
 
-struct sc_conf {
+struct sc_conf
+{
 	config configure;
 	struct sc_opt_param *param;
 };
@@ -81,9 +118,10 @@ typedef struct sc_opt sigC_option;
 typedef struct sc_opt_param sigC_param;
 typedef struct sc_conf sigC_config;
 
-extern const struct sigmac {
+extern const struct sigmac
+{
 	//	relays a reference to the Sigma.C compiler
 	//	TRUE if valid instance; otherwise FALSE
-	bool (*instance)(sigC*);
+	bool (*instance)(sigC **);
 } SC;
 #endif /* _SIGMAC_H_ */

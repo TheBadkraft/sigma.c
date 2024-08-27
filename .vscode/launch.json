@@ -5,8 +5,10 @@
             "name": "debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/../bin/${workspaceFolderBasename}_dbg_tests",
-            "args": [],
+            "program": "${workspaceFolder}/bin/${workspaceFolderBasename}_dbg",
+            "args": [
+                "--version"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -32,7 +34,7 @@
             "name": "launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/../bin/${workspaceFolderBasename}_tests",
+            "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

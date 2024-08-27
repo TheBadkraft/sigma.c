@@ -2,21 +2,12 @@
 	"folders": [
 		{
 			"path": ".."
-		},
-		{
-			"path": "../../open_framework/lib/open"
-		},
-		{
-			"path": "../../open_framework/lib/bin"
-		},
-		{
-			"path": "../../open_framework/lib/shared"
 		}
 	],
 	"settings": {
 		"files.associations": {
-			"core.h": "c",
-			"string.h": "c"
+			"version.h": "c",
+			"core.h": "c"
 		}
 	},
 }
