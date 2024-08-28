@@ -20,7 +20,6 @@ enum bi_opt_type
 	OUTPUT = 1,
 	LOGDEST = 2,
 };
-
 //	key option type - e.g., '-i', '-o', etc
 enum key_opt
 {
@@ -36,12 +35,11 @@ enum tag_opt
 	OPTTAG_VERSION = 2,
 	OPTTAG_DEFAULT = 3,
 };
+//	no-op option - annotates a *null* option
 enum nop_opt
 {
 	OPT_NO_OP
 };
-//	option type - key or tag
-
 /*
  * sc_opt_param: parameter container for command line args
  * examples:
@@ -56,6 +54,8 @@ struct sc_opt_param
 	//	sc_opt_type will tell us which member of each union to access
 	//	TODO: io_type_properties (???)
 };
+
+//	configuration delegate
 typedef bool (*config)(struct sc_opt_param *);
 
 /*
@@ -63,12 +63,14 @@ typedef bool (*config)(struct sc_opt_param *);
  */
 struct sc_opt
 {
+	//	what kind of option - no-op, key, tag
 	enum
 	{
 		OPT_NOP = -1,
 		OPT_TAG = 0,
 		OPT_KEY = 1
 	} opt_type;
+	//	the option
 	union
 	{
 		enum nop_opt nop;
@@ -101,6 +103,8 @@ struct sigc
 	directory *cwd;
 	//	the path from which sigmac executes
 	string *path;
+	//	codex: language definition
+	struct sc_codex *codex;
 	/*
 	 * TODO:
 	 *	add exit mode - SILENT, WHISPER, SHOUT, SCREAM
@@ -118,10 +122,11 @@ typedef struct sc_opt sigC_option;
 typedef struct sc_opt_param sigC_param;
 typedef struct sc_conf sigC_config;
 
-extern const struct sigmac
+extern const struct SigmaC
 {
 	//	relays a reference to the Sigma.C compiler
 	//	TRUE if valid instance; otherwise FALSE
 	bool (*instance)(sigC **);
+	bool (*load_codex)();
 } SC;
 #endif /* _SIGMAC_H_ */
