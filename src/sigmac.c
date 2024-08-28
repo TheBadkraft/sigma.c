@@ -27,11 +27,15 @@ char **const KEY_OPTIONS = (char *[]){
 char **const TAG_OPTIONS = (char *[]){
 	"help", "info", "version", "default", NULL};
 
+#define NULL_OPT \
+	(struct sc_opt) { OPT_NOP, OPT_NO_OP, NULL, NULL }
+
 //	TODO: place into a file for configuration ...???
 const size_t USR_OPT_COUNT = 6;
 const size_t BLTIN_OPT_CNT = 1;
 struct sc_opt bltin_optns[] = {
 	{OPT_KEY, OPTKEY_SOURCE, NULL, "Source file."},
+	NULL_OPT,
 };
 struct sc_opt usr_options[] = {
 	//	TODO: add property to enable/disable
@@ -41,11 +45,12 @@ struct sc_opt usr_options[] = {
 	{OPT_TAG, OPTTAG_DEFAULT, NULL, "Display default settings."},
 	{OPT_KEY, OPTKEY_OUTPUT, NULL, "To output file"},
 	{OPT_KEY, OPTKEY_1D10T, NULL, "ID:10T compatibility switch."},
-};
+	NULL_OPT};
 
 static sigC *sigc;
 static sigC_config *sigC_settings;
 
+//	version
 const byte maj = 0;
 const byte min = 0;
 const ushort bld = 2;
@@ -53,30 +58,33 @@ const relc rc = ALPHA;
 char *label = "tuxedo";
 
 //	PROTOTYPES
-static bool __sc_init();
-static bool __sc_load_configuration(char **);
-static bool __sc_configure();
+bool __sc_instance(sigC **);
+bool __sc_load_codex();
 
-static int __process_args(char **);
-static void __parse_built_in_options();
-static void __parse_options();
-static int __find_source_index(char **const, char *);
+static bool sc_init();
+static bool sc_load_configuration(char **);
+static bool sc_configure();
 
-static sigC_option *__get_option_by_tag(char *);
-static sigC_option *__get_option_by_key(char *);
-static sigC_option *__set_source_option(char *, IOType);
+static int process_args(char **);
+static void parse_built_in_options();
+static void parse_options();
+static int find_source_index(char **const, char *);
 
-static bool __set_source_param();
+static sigC_option *get_option_by_tag(char *);
+static sigC_option *get_option_by_key(char *);
+static sigC_option *set_source_option(char *, IOType);
 
-static bool __display_help(sigC_param *);
-static bool __display_info(sigC_param *);
-static bool __display_version(sigC_param *);
-static bool __display_default(sigC_param *);
-static bool __id10t_compatibility_mode(sigC_param *);
-static bool __set_output_file(sigC_param *);
+static bool set_source_param();
+
+static bool display_help(sigC_param *);
+static bool display_info(sigC_param *);
+static bool display_version(sigC_param *);
+static bool display_default(sigC_param *);
+static bool id10t_compatibility_mode(sigC_param *);
+static bool set_output_file(sigC_param *);
 
 //	DEFINITIONS
-static bool __sc_init()
+static bool sc_init()
 {
 	bool retOk = (sigc = malloc(sizeof(sigC))) != NULL;
 
@@ -84,8 +92,8 @@ static bool __sc_init()
 	{
 		sigc->name = "Sigma.C";
 		sigc->ver = Version.new(maj, min, bld, rc, label);
-		sigc->load = &__sc_load_configuration;
-		sigc->configure = &__sc_configure;
+		sigc->load = &sc_load_configuration;
+		sigc->configure = &sc_configure;
 		Directory.current(&(sigc->cwd));
 		sigc->path = String.alloc(Path.directory(__FILE__));
 		// sigc->cdx_definition = "sigmac.def";
@@ -94,8 +102,8 @@ static bool __sc_init()
 		printf("cwd:  %s\n", sigc->cwd->name->buffer);
 		printf("path: %s\n", sigc->path->buffer);
 
-		__parse_built_in_options();
-		__parse_options();
+		parse_built_in_options();
+		parse_options();
 	}
 	else
 	{
@@ -104,11 +112,11 @@ static bool __sc_init()
 
 	return retOk;
 }
-static bool __sc_load_configuration(char **argv)
+static bool sc_load_configuration(char **argv)
 {
 	bool retOk = true;
 	//	skip arg[0] CL: sigma.c
-	int arg_count = __process_args(++argv);
+	int arg_count = process_args(++argv);
 	int ndx = 0;
 	sigC_option *opt;
 	sigC_config *cfg;
@@ -135,7 +143,7 @@ static bool __sc_load_configuration(char **argv)
 
 	return retOk;
 }
-static bool __sc_configure()
+static bool sc_configure()
 {
 	bool retOk = true;
 	sigC_config *ptr = sigC_settings;
@@ -149,7 +157,7 @@ static bool __sc_configure()
 
 	return retOk;
 }
-static int __process_args(char **argv)
+static int process_args(char **argv)
 {
 	char **ndx = argv;
 	char *arg = *ndx;
@@ -168,19 +176,19 @@ static int __process_args(char **argv)
 		{
 			arg += 2;
 			//	find option by tag
-			opt = __get_option_by_tag(arg);
+			opt = get_option_by_tag(arg);
 			//	TODO: some options will terminate any other options
 		}
 		else if (arg[0] == '-')
 		{
 			//	find option by key
-			opt = __get_option_by_key(arg);
+			opt = get_option_by_key(arg);
 			//	TODO: some options will terminate any other options
 		}
 		else if (*(ndx + 1) == NULL && (io_type = Path.type(arg) != IO_UNKNOWN))
 		{
 			//	we are at the last arg - expect FILE or PATH
-			opt = __set_source_option(arg, io_type);
+			opt = set_source_option(arg, io_type);
 		}
 		else
 		{
@@ -221,7 +229,7 @@ static int __process_args(char **argv)
 
 	return arg_count;
 }
-static int __find_source_index(char **const source, char *item)
+static int find_source_index(char **const source, char *item)
 {
 	char **ptr = source;
 	char *pItem = *ptr;
@@ -240,9 +248,9 @@ static int __find_source_index(char **const source, char *item)
 
 	return ndx;
 }
-static sigC_option *__get_option_by_tag(char *tag)
+static sigC_option *get_option_by_tag(char *tag)
 {
-	int tagNdx = __find_source_index(TAG_OPTIONS, tag);
+	int tagNdx = find_source_index(TAG_OPTIONS, tag);
 	enum tag_opt tagOption = tagNdx;
 	sigC_option *ndx = usr_options;
 	sigC_option opt = *ndx;
@@ -257,9 +265,9 @@ static sigC_option *__get_option_by_tag(char *tag)
 
 	return NULL;
 }
-static sigC_option *__get_option_by_key(char *key)
+static sigC_option *get_option_by_key(char *key)
 {
-	int keyNdx = __find_source_index(KEY_OPTIONS, key);
+	int keyNdx = find_source_index(KEY_OPTIONS, key);
 	enum key_opt keyOption = keyNdx;
 	sigC_option *ndx = usr_options;
 	sigC_option opt = *ndx;
@@ -274,24 +282,24 @@ static sigC_option *__get_option_by_key(char *key)
 
 	return NULL;
 }
-static sigC_option *__set_source_option(char *pPath, IOType io_type)
+static sigC_option *set_source_option(char *pPath, IOType io_type)
 {
 	sigC_option *opt = &bltin_optns[SOURCE];
-	opt->configure = &__set_source_param;
+	opt->configure = &set_source_param;
 	opt->param = malloc(sizeof(sigC_param));
 	opt->param->params = pPath;
 	opt->param->type = SOURCE;
 
 	return opt;
 }
-static bool __set_source_param(sigC_param *param)
+static bool set_source_param(sigC_param *param)
 {
 	//	TODO: read source input parameter
 	printf("[TODO] Source: %s\n", param->params);
 
 	return true;
 }
-static void __parse_built_in_options()
+static void parse_built_in_options()
 {
 	sigC_option *ndx = bltin_optns;
 	while (ndx - bltin_optns < BLTIN_OPT_CNT)
@@ -302,7 +310,7 @@ static void __parse_built_in_options()
 			switch (ndx->option.key)
 			{
 			case OPTKEY_SOURCE:
-				ndx->configure = &__set_source_param;
+				ndx->configure = &set_source_param;
 
 				break;
 			default:
@@ -318,7 +326,7 @@ static void __parse_built_in_options()
 		++ndx;
 	}
 }
-static void __parse_options()
+static void parse_options()
 {
 	//	printf("parse options:\n");
 
@@ -332,11 +340,11 @@ static void __parse_options()
 			switch (ndx->option.key)
 			{
 			case OPTKEY_1D10T:
-				ndx->configure = &__id10t_compatibility_mode;
+				ndx->configure = &id10t_compatibility_mode;
 
 				break;
 			case OPTKEY_OUTPUT:
-				ndx->configure = &__set_output_file;
+				ndx->configure = &set_output_file;
 
 				break;
 			}
@@ -346,19 +354,19 @@ static void __parse_options()
 			switch (ndx->option.tag)
 			{
 			case OPTTAG_HELP:
-				ndx->configure = &__display_help;
+				ndx->configure = &display_help;
 
 				break;
 			case OPTTAG_INFO:
-				ndx->configure = &__display_info;
+				ndx->configure = &display_info;
 
 				break;
 			case OPTTAG_VERSION:
-				ndx->configure = &__display_version;
+				ndx->configure = &display_version;
 
 				break;
 			case OPTTAG_DEFAULT:
-				ndx->configure = &__display_default;
+				ndx->configure = &display_default;
 
 				break;
 			}
@@ -369,41 +377,42 @@ static void __parse_options()
 		++ndx;
 	}
 }
-static bool __id10t_compatibility_mode(sigC_param *param)
+
+static bool id10t_compatibility_mode(sigC_param *param)
 {
-	printf("ID10.t compatibility mode [TRUE]\n");
+	printf("ID10t compatibility mode [TRUE]\n");
 
 	return false;
 }
-static bool __display_help(sigC_param *param)
+static bool display_help(sigC_param *param)
 {
 	//	TODO: options table
 	printf("[TODO] Usage & Options ====\n");
 
 	return true;
 }
-static bool __display_info(sigC_param *param)
+static bool display_info(sigC_param *param)
 {
 	//	TODO: verbose info
 	printf("[TODO] Info ===============\n");
 
 	return false;
 }
-static bool __display_version(sigC_param *param)
+static bool display_version(sigC_param *param)
 {
 	//	TODO: version
 	printf("[TODO] Version: \n");
 
 	return true;
 }
-static bool __display_default(sigC_param *param)
+static bool display_default(sigC_param *param)
 {
 	//	TODO: default
 	printf("[TODO] Default configuration: \n");
 
 	return true;
 }
-static bool __set_output_file(sigC_param *param)
+static bool set_output_file(sigC_param *param)
 {
 	//	TODO: output file parameters
 	printf("[TODO] Output: %s\n", param ? param->params : "[using default]");
@@ -416,13 +425,13 @@ static bool __set_output_file(sigC_param *param)
  * 	Relays reference to the Sigma.C compiler. If the compiler has not
  * 	been initialized, this will run initialization.
  *
- * 	sigC*:	reference to compiler object
+ * 	sigC**:	reference to the compiler
  * 	bool:	returns TRUE if valid reference;
  * 			otherwise FALSE
  */
-bool sc_instance(sigC **sc)
+bool __sc_instance(sigC **sc)
 {
-	if (!sigc && __sc_init())
+	if (!sigc && sc_init())
 	{
 		(*sc) = sigc;
 	}
@@ -433,6 +442,17 @@ bool sc_instance(sigC **sc)
 
 	return (*sc) != NULL;
 }
+bool __sc_load_codex()
+{
+	bool retOk = Codex.init(sigc->cwd, &(sigc->codex));
+	if (!retOk)
+	{
+		printf("error loading Sigma.C Codex\n");
+	}
 
-const struct sigmac SC = {
-	.instance = &sc_instance};
+	return retOk;
+}
+
+const struct SigmaC SC = {
+	.instance = &__sc_instance,
+	.load_codex = &__sc_load_codex};

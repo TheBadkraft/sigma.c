@@ -58,13 +58,24 @@ int main(int argc, char **argv)
 		printf("WARNING: args (%d) :: ", sigc->cfgc);
 	}
 
-/*
- * 	load the Codex
+	/*
+	 * 	load the Codex
 
- SC.load_codex("./.data/sigmac.def");
- //	validate sigc.codex has lexer, document, etc.
+	 SC.load_codex("./.data/sigmac.def");
+	 //	validate sigc.codex has lexer, document, etc.
+	 */
+	if (!retOk)
+	{
+		goto quit_sigmac;
+	}
+	retOk = SC.load_codex();
+	if (!retOk)
+	{
+		goto quit_sigmac;
+	}
 
- */
+	printf("loaded Codex: %s\n", sigc->codex->definition->name->buffer);
+	// printf("%s\n", sigc->codex->definition->content->buffer);
 
 /*
  * 	load the Parser
