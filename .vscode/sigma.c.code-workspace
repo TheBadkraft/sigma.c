@@ -6,6 +6,13 @@
 	],
 	"settings": {
 		"files.associations": {
+			"io.h": "c",
+			"io_stream.h": "c",
+			"types.h": "c",
+			"version.h": "c",
+			"ebnf_indexer.h": "c",
+			"indexer.h": "c",
+			"token.h": "c"
 		}
 	},
 }

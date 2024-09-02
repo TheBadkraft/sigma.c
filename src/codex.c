@@ -7,23 +7,23 @@
 #include "codex.h"
 #include "ebnf_indexer.h"
 
-static codex *sigc_codex;
+static codex sigc_codex;
 
-static const char *DEF_PATH = ".data/sigmac.def";
-static file *DEF_SOURCE = NULL;
+static const string DEF_PATH = ".data/sigmac.def";
+static file DEF_SOURCE = NULL;
 
 //	parser version
 const byte prs_maj = 0;
 const byte prs_min = 0;
 const ushort prs_bld = 1;
-const relc prs_rc = ALPHA;
-char *prs_label = "stark";
+const RC prs_rc = ALPHA;
+string prs_label = "stark";
 
 //	PROTOTYPES
-static bool __cdx_init(directory *);
+static bool __cdx_init(directory);
 static bool __cdx_load_definition();
 
-static parser *__prs_new();
+static parser __prs_new();
 static bool __prs_load_ruleset();
 //	DEFINITIONS
 //	========================= Codex =========================
@@ -31,17 +31,18 @@ static bool __prs_load_ruleset();
 /*
 	Initialize Codex with current working directory
 */
-static bool __cdx_init(directory *pCWDir)
+static bool __cdx_init(directory pCWDir)
 {
 	sigc_codex = NULL;
 
-	string *def_path = String.new();
-	Path.combine(&def_path, pCWDir->path->buffer, DEF_PATH, NULL);
+	string def_path;
+	String.new(0, &def_path);
+	Path.combine(def_path, pCWDir->path, DEF_PATH, NULL);
 
-	bool retOk = String.length(def_path) > 0 && path_exists(def_path);
+	bool retOk = String.length(def_path) > 0 && Path.exists(def_path);
 	if (retOk)
 	{
-		DEF_SOURCE = File.new(def_path->buffer);
+		DEF_SOURCE = File.new(def_path);
 		free(def_path);
 
 		sigc_codex = malloc(sizeof(codex));
@@ -66,22 +67,26 @@ static bool __cdx_init(directory *pCWDir)
 static bool __cdx_load_definition()
 {
 	bool retOk = true;
-	stream *pStream;
+	stream pStream;
 
-	if (Stream.new(DEF_SOURCE, READ, &pStream))
+	if ((pStream = Stream.new(DEF_PATH)) != NULL)
 	{
 		if (!(retOk = Document.load(pStream, &(sigc_codex->definition))))
 		{
-			printf("error loading doc (%s) from stream (%s)\n", sigc_codex->definition->name->buffer, DEF_SOURCE->path->buffer);
+			printf("error loading doc (%s) from stream (%s)\n", sigc_codex->definition->name, DEF_SOURCE->path);
 		}
+	}
+	else
+	{
+		printf("error creating stream: %s", DEF_PATH);
 	}
 
 	return retOk;
 }
 //	========================= Parser ========================
-static parser *__prs_new()
+static parser __prs_new()
 {
-	parser *pParser = malloc(sizeof(parser));
+	parser pParser = malloc(sizeof(struct sc_parser));
 
 	if (pParser)
 	{
@@ -93,13 +98,14 @@ static parser *__prs_new()
 static bool __prs_load_ruleset()
 {
 	bool retOk = true;
-	indexer *pIndexer = Indexer.init(sigc_codex->definition->name->buffer, ebnf_tokenize);
+	indexer pIndexer;
+	Indexer.init(sigc_codex->definition->name, ebnf_tokenize, &pIndexer);
 
-	token *pToken;
+	token pToken;
 	pIndexer->tokenize(sigc_codex->definition, &pToken);
 
 	char *word = NULL;
-	token *ptr = pToken;
+	token ptr = pToken;
 	while (ptr)
 	{
 		Token.word(ptr, &word);
@@ -121,7 +127,7 @@ static bool __prs_load_ruleset()
  * 	bool:	returns TRUE if valid reference;
  * 			otherwise FALSE
  */
-bool __codex_instance(directory *pCWDir, codex **cdx)
+bool __codex_instance(directory pCWDir, codex *cdx)
 {
 	bool retOk = true;
 

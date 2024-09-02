@@ -1,8 +1,7 @@
 {
 	"version": "2.0.0",
 	"tasks": [
-		{
-			"label": "build debug",
+		{   "label": "build debug",
 			"type": "cppbuild",
 			"command": "/usr/bin/gcc",
 			"args": [
@@ -14,6 +13,9 @@
 				"-l_except",
 				"-l_io"
 			],
+            "presentation": {
+                "clear": true
+            },
 			"problemMatcher": [
 				"$gcc"
 			],
@@ -23,8 +25,7 @@
 			},
 			"detail": "compiler: gcc"
 		},
-		{
-			"label": "build",
+		{   "label": "build",
 			"type": "cppbuild",
 			"command": "/usr/bin/gcc",
 			"args": [
@@ -35,19 +36,27 @@
 				"-l_except",
 				"-l_io"
 			],
+            "presentation": {
+                "clear": true
+            },
 			"problemMatcher": [
 				"$gcc"
 			],
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"detail": "compiler: gcc"
 		},
-		{
-			"label": "dependencies",
+		{   "label": "dependencies",
 			"type": "process",
 			"command": "/usr/bin/ldd",
 			"args": [
 				"${workspaceFolder}/bin/shared_dbg_${workspaceFolderBasename}"
 			],
+            "presentation": {
+                "clear": true
+            },
 			"dependsOn": [
 				"debug so"
 			],

@@ -2,7 +2,7 @@
 #define _EBNF_INDEXER_H
 
 #include "open/types.h"
-#include "../core/indexer.h"
+#include "indexer.h"
 
 const char SPACE = ' ';
 const char NEWLINE = '\n';
@@ -38,17 +38,17 @@ static char *get_word(char *ptr, size_t *wrdLen, size_t strLen)
 
     return end;
 }
-bool ebnf_tokenize(document *pDoc, token **pTknHead)
+bool ebnf_tokenize(document pDoc, token *pTknHead)
 {
-    char *pSrc;
-    char *ptr = pSrc = pDoc->content->buffer;
+    string pSrc;
+    string ptr = pSrc = pDoc->content;
     size_t ndx = 0;
     size_t length = 0;
     size_t srcLen = strlen(pSrc);
     int line = 1;
-    char *pWrd;
+    string pWrd;
     (*pTknHead) = NULL;
-    token *pCurrent = NULL;
+    token pCurrent = NULL;
 
     while (ndx < srcLen)
     {
