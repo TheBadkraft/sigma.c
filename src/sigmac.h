@@ -8,8 +8,7 @@
 #define _SIGMAC_H_
 
 #include "open/io.h"
-
-#include "../core/version.h"
+#include "open/version.h"
 
 #include "codex.h"
 
@@ -88,21 +87,21 @@ struct sc_opt
 struct sigc
 {
 	//	compiler name
-	const char *name;
+	string name;
 	//	compiler version
-	version *ver;
+	version ver;
 	//	number of configuration arguments
 	int cfgc;
 	//	delegate handler to load options
-	bool (*load)(char **);
+	bool (*load)(string *);
 	//	collection of sc_opt objects
 	struct sc_opt *options;
 	//	delegate handler to configure the compiler
 	bool (*configure)(void);
 	//	current working dir is what the CL path is
-	directory *cwd;
+	directory cwd;
 	//	the path from which sigmac executes
-	string *path;
+	string path;
 	//	codex: language definition
 	struct sc_codex *codex;
 	/*
@@ -111,22 +110,22 @@ struct sigc
 	 */
 };
 
-struct sc_conf
+struct sc_cfg
 {
 	config configure;
 	struct sc_opt_param *param;
 };
 
-typedef struct sigc sigC;
-typedef struct sc_opt sigC_option;
-typedef struct sc_opt_param sigC_param;
-typedef struct sc_conf sigC_config;
+typedef struct sigc *sigC;
+typedef struct sc_opt *sigC_option;
+typedef struct sc_opt_param *sigC_param;
+typedef struct sc_cfg *sigC_config;
 
 extern const struct SigmaC
 {
 	//	relays a reference to the Sigma.C compiler
 	//	TRUE if valid instance; otherwise FALSE
-	bool (*instance)(sigC **);
+	bool (*instance)(sigC *);
 	bool (*load_codex)();
 } SC;
 #endif /* _SIGMAC_H_ */

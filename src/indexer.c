@@ -1,23 +1,24 @@
 #include <stdio.h>
 
-#include "open/io_stream.h"
+#include "open/io.h"
+#include "open/internal/internal_io.h"
 
-#include "../core/indexer.h"
+#include "indexer.h"
 
-bool default_tokenizer(document *, token **);
+bool default_tokenizer(document, token *);
 
-static bool __doc_load(stream *, document **);
+static bool __doc_load(stream, document *);
 
 static index_delegate handler = default_tokenizer;
 
-bool default_tokenizer(document *pDoc, token **pToken)
+bool default_tokenizer(document pDoc, token *pToken)
 {
     printf("[default indexer]\n");
 
     (*pToken) = malloc(sizeof(token));
     if ((*pToken))
     {
-        (*pToken)->pPos = pDoc->content->buffer;
+        (*pToken)->pPos = pDoc->content;
         (*pToken)->length = String.length(pDoc->content);
     }
 
@@ -25,63 +26,66 @@ bool default_tokenizer(document *pDoc, token **pToken)
 }
 //  =========================================================
 
-indexer *indexer_init(char *name, index_delegate delegate)
+bool indexer_init(string name, index_delegate delegate, indexer *pIndexer)
 {
     printf("Sig.C Indexer [%s]... initializing\n", name);
-    indexer *pIndexer = malloc(sizeof(indexer));
+    (*pIndexer) = malloc(sizeof(struct io_indexer));
 
     if (!pIndexer)
     {
         //  throwErr()
         printf("Error initializing Indexer ... OOPS!\n");
-        return NULL;
-    }
-
-    //  configure
-    pIndexer->name = name;
-    if (delegate)
-    {
-        pIndexer->tokenize = delegate;
     }
     else
-    {
-        pIndexer->tokenize = handler;
+    { //  configure
+        (*pIndexer)->name = name;
+        if (delegate)
+        {
+            (*pIndexer)->tokenize = delegate;
+        }
+        else
+        {
+            (*pIndexer)->tokenize = handler;
+        }
     }
 
-    return pIndexer;
+    return (*pIndexer) != NULL;
 }
-bool indexer_index(document *pDoc, token **pToken)
+bool indexer_index(document pDoc, token *pToken)
 {
     return handler(pDoc, pToken);
 }
 
 //	======================================
 
-static bool __doc_load(stream *pStream, document **pDoc)
+static bool __doc_load(stream pStream, document *pDoc)
 {
     if (pStream)
     {
         //  as long as stream is created in READ mode, this is unnecessary ...
         //      we do it here just in case to prevent an error
-        if (!pStream->fstream)
+        if (!Stream.is_open(pStream))
         {
-            if (!Stream.open(pStream, READ))
+            if (!__open_stream(pStream, READ))
             {
                 return false;
             }
+            // if (!Stream.open(pStream, READ))
+            // {
+            //     return false;
+            // }
         }
 
-        (*pDoc) = malloc(sizeof(document));
-        (*pDoc)->name = String.new();
-        (*pDoc)->content = String.new();
-        String.copy((*pDoc)->name, pStream->source->name->buffer);
-        String.capacity((*pDoc)->content, pStream->length + 1);
+        (*pDoc) = malloc(sizeof(struct io_document));
+        String.new(0, &(*pDoc)->name);
+        String.copy((*pDoc)->name, pStream->source);
+        String.new(pStream->length + 1, &(*pDoc)->content);
 
         int ndx = 0;
-        while (Stream.read(pStream, (*pDoc)->content->buffer + ndx))
-        {
-            ++ndx;
-        }
+        // while (Stream.read(pStream, (*pDoc)->content->buffer + ndx))
+        // {
+        //     ++ndx;
+        // }
     }
 
     return (*pDoc) != NULL;

@@ -1,17 +1,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../core/token.h"
+#include "open/token.h"
 
-token *__token_new(char *, size_t);
-bool __token_word(token *, char **);
-void __token_free(token *);
+token __token_new(char *, size_t);
+bool __token_word(token, string *);
+void __token_free(token);
 /*
  * Create a new token from begin and length
  */
-token *__token_new(char *pPos, size_t length)
+token __token_new(char *pPos, size_t length)
 {
-	token *pToken = malloc(sizeof(token));
+	token pToken = malloc(sizeof(token));
 	pToken->pPos = pPos;
 	pToken->length = length;
 	//	pToken->prev = NULL;
@@ -19,7 +19,7 @@ token *__token_new(char *pPos, size_t length)
 
 	return pToken;
 }
-bool __token_word(token *pToken, char **pWord)
+bool __token_word(token pToken, string *pWord)
 {
 	if (!(*pWord))
 	{
@@ -34,9 +34,9 @@ bool __token_word(token *pToken, char **pWord)
 
 	return (*pWord) != NULL;
 }
-void __token_free(token *pToken)
+void __token_free(token pToken)
 {
-	token *pTemp;
+	token pTemp;
 	while (pToken)
 	{
 		pTemp = pToken;

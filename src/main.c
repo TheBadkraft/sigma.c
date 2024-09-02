@@ -15,11 +15,11 @@
 
 #define STATUS(okay) okay ? EXIT_SUCCESS : EXIT_FAILURE
 
-int main(int argc, char **argv)
+int main(int argc, string *argv)
 {
 	bool retOk = true;
 	int status = STATUS(retOk);
-	sigC *sigc;
+	sigC sigc;
 
 	if (!retOk)
 	{
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 		goto quit_sigmac;
 	}
 
-	printf("loaded Codex: %s\n", sigc->codex->definition->name->buffer);
+	printf("loaded Codex: %s\n", sigc->codex->definition->name);
 	// printf("%s\n", sigc->codex->definition->content->buffer);
 
 /*
