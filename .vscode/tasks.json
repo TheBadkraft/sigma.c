@@ -9,9 +9,8 @@
 				"-o",
 				"${workspaceFolder}/bin/${workspaceFolderBasename}_dbg",
 				"${workspaceFolder}/src/*.c",
-				"-l_string",
+				"-l_core",
 				"-l_except",
-				"-l_io"
 			],
             "presentation": {
                 "clear": true
@@ -32,9 +31,8 @@
 				"-o",
 				"${workspaceFolder}/bin/${workspaceFolderBasename}",
 				"${workspaceFolder}/src/*.c",
-				"-l_string",
+				"-l_core",
 				"-l_except",
-				"-l_io"
 			],
             "presentation": {
                 "clear": true
@@ -52,13 +50,13 @@
 			"type": "process",
 			"command": "/usr/bin/ldd",
 			"args": [
-				"${workspaceFolder}/bin/shared_dbg_${workspaceFolderBasename}"
+				"${workspaceFolder}/bin/${workspaceFolderBasename}"
 			],
             "presentation": {
                 "clear": true
             },
 			"dependsOn": [
-				"debug so"
+				"build"
 			],
 			"problemMatcher": [
 				"$gcc"
