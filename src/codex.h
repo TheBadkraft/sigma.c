@@ -42,6 +42,7 @@ extern const struct SC_Codex
 {
 	//	initialize a singleton instance of the Codex
 	bool (*init)(directory, codex *);
+	void (*dispose)();
 } Codex;
 
 #endif /* _CODEX_H_ */

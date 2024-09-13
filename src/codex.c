@@ -8,9 +8,9 @@
 #include "ebnf_indexer.h"
 
 static codex sigc_codex;
+static file def_file = NULL;
 
 static const string DEF_PATH = ".data/sigmac.def";
-static file DEF_SOURCE = NULL;
 
 //	parser version
 const byte prs_maj = 0;
@@ -20,32 +20,33 @@ const RC prs_rc = ALPHA;
 string prs_label = "stark";
 
 //	PROTOTYPES
-static bool __cdx_init(directory);
-static bool __cdx_load_definition();
+static bool codex_init(directory);
+static bool codex_load_definition();
+static void codex_dispose();
 
-static parser __prs_new();
-static bool __prs_load_ruleset();
+static parser parser_new();
+static bool parser_load_ruleset();
 //	DEFINITIONS
 //	========================= Codex =========================
 
 /*
 	Initialize Codex with current working directory
 */
-static bool __cdx_init(directory pCWDir)
+static bool codex_init(directory cwDir)
 {
 	sigc_codex = NULL;
 
 	string def_path;
 	String.new(0, &def_path);
-	Path.combine(def_path, pCWDir->path, DEF_PATH, NULL);
+	Path.combine(&def_path, cwDir->path, DEF_PATH, NULL);
 
 	bool retOk = String.length(def_path) > 0 && Path.exists(def_path);
 	if (retOk)
 	{
-		DEF_SOURCE = File.new(def_path);
-		free(def_path);
+		def_file = File.new(def_path);
+		String.free(def_path);
 
-		sigc_codex = malloc(sizeof(codex));
+		sigc_codex = Allocator.alloc(sizeof(codex), UNINITIALIZED);
 	}
 
 	if (!sigc_codex)
@@ -55,7 +56,8 @@ static bool __cdx_init(directory pCWDir)
 	}
 	else
 	{
-		sigc_codex->parser = __prs_new();
+
+		sigc_codex->parser = parser_new();
 		retOk = sigc_codex->parser != NULL;
 	}
 
@@ -64,7 +66,7 @@ static bool __cdx_init(directory pCWDir)
 /*
 	Load language definition file
 */
-static bool __cdx_load_definition()
+static bool codex_load_definition()
 {
 	bool retOk = true;
 	stream pStream;
@@ -73,7 +75,7 @@ static bool __cdx_load_definition()
 	{
 		if (!(retOk = Document.load(pStream, &(sigc_codex->definition))))
 		{
-			printf("error loading doc (%s) from stream (%s)\n", sigc_codex->definition->name, DEF_SOURCE->path);
+			printf("error loading doc (%s) from stream (%s)\n", sigc_codex->definition->name, def_file->path);
 		}
 	}
 	else
@@ -84,9 +86,9 @@ static bool __cdx_load_definition()
 	return retOk;
 }
 //	========================= Parser ========================
-static parser __prs_new()
+static parser parser_new()
 {
-	parser pParser = malloc(sizeof(struct sc_parser));
+	parser pParser = Allocator.alloc(sizeof(struct sc_parser), UNINITIALIZED);
 
 	if (pParser)
 	{
@@ -95,7 +97,7 @@ static parser __prs_new()
 
 	return pParser;
 }
-static bool __prs_load_ruleset()
+static bool parser_load_ruleset()
 {
 	bool retOk = true;
 	indexer pIndexer;
@@ -131,10 +133,10 @@ bool __codex_instance(directory pCWDir, codex *cdx)
 {
 	bool retOk = true;
 
-	if (!sigc_codex && __cdx_init(pCWDir))
+	if (!sigc_codex && codex_init(pCWDir))
 	{
 		(*cdx) = sigc_codex;
-		retOk = __cdx_load_definition();
+		retOk = codex_load_definition();
 	}
 	else
 	{
@@ -144,7 +146,7 @@ bool __codex_instance(directory pCWDir, codex *cdx)
 
 	if (retOk)
 	{
-		retOk = __prs_load_ruleset();
+		retOk = parser_load_ruleset();
 	}
 
 	return retOk;

@@ -9,16 +9,23 @@
 
 #include "sigmac.h"
 
-// string const OPT_HELP = "help";
-// const string OPT_INFO = "info";
-// const string OPT_VERSION = "version";
-// const string OPT_DEFAULT = "default";
+// #if DEBUG
+#include "test/sigc_tests.h"
+// #endif
 
-// char const OPT_UNKN = -1;
-// char const OPT_NONE = '\0';
-// char const OPT_ID10T = 'i';
-// char const OPT_OUTPUT = 'o';
-// char const OPT_SOURCE = 's';
+//	version
+const byte maj = 0;
+const byte min = 0;
+const ushort build = 2;
+const RC rc = ALPHA;
+string label = "tuxedo";
+
+//	TODO: err queue
+static string ERR_PARAM;
+static string *const ERR_MSG_FORMATS = (string[]){
+	"No Error",
+	"Bad User Option: %s",
+};
 
 //	terminate collections with NULL for ease of iteration
 string *const KEY_OPTIONS = (string[]){
@@ -26,17 +33,17 @@ string *const KEY_OPTIONS = (string[]){
 string *const TAG_OPTIONS = (string[]){
 	"help", "info", "version", "default", NULL};
 
-#define NULL_OPT \
+#define EMPTY_OPT \
 	(struct sc_opt) { OPT_NOP, OPT_NO_OP, NULL, NULL }
 
+const struct sc_opt NULL_OPT = EMPTY_OPT;
+
 //	TODO: place into a file for configuration ...???
-const size_t USR_OPT_COUNT = 6;
-const size_t BLTIN_OPT_CNT = 1;
-struct sc_opt bltin_optns[] = {
+struct sc_opt DEFAULT_OPTIONS[] = {
 	{OPT_KEY, OPTKEY_SOURCE, NULL, "Source file."},
-	NULL_OPT,
+	EMPTY_OPT,
 };
-struct sc_opt usr_options[] = {
+struct sc_opt USER_OPTIONS[] = {
 	//	TODO: add property to enable/disable
 	{OPT_TAG, OPTTAG_HELP, NULL, "Display command-line options and usage."},
 	{OPT_TAG, OPTTAG_INFO, NULL, "Full compiler and component version information."},
@@ -44,30 +51,60 @@ struct sc_opt usr_options[] = {
 	{OPT_TAG, OPTTAG_DEFAULT, NULL, "Display default settings."},
 	{OPT_KEY, OPTKEY_OUTPUT, NULL, "To output file"},
 	{OPT_KEY, OPTKEY_1D10T, NULL, "ID:10T compatibility switch."},
-	NULL_OPT};
+	EMPTY_OPT,
+};
 
-static sigC sigc;
+/*-- sigC prototypes --*/
+/// @brief load argument options
+/// @param argv
+/// @return TRUE if options loaded; otherwise FALSE
+static bool sigc_load(string *);
+/// @brief configure the compiler
+/// @param void
+/// @return TRUE if configuration successful; otherwise FALSE
+static bool sigc_configure(void);
+/// @brief dispose compiler
+/// @param  void
+static void sigc_dispose(void);
+
+/// @brief the Sigma.C compiler instance
+static struct sigc SIGC = {
+	.is_initialized = false,
+	.name = "Sigma.C",
+	.argc = 0,
+	.load = &sigc_load,
+	.configure = &sigc_configure,
+	.dispose = &sigc_dispose,
+};
+
 static sigC_config sigC_settings;
 
-//	version
-const byte maj = 0;
-const byte min = 0;
-const ushort bld = 2;
-const RC rc = ALPHA;
-string label = "tuxedo";
-
-//	PROTOTYPES
-bool __sc_instance(sigC *);
-bool __sc_load_codex();
-
-static bool sc_init();
-static bool sc_load_configuration(string *);
-static bool sc_configure();
+//	PROTOTYPES	---------------------
+/*
+ * 	Obtain a reference to the Sigma.C compiler. If the compiler has not
+ * 	been initialized, this will run initialization.
+ *
+ * 	sigC*:	reference to the compiler
+ * 	bool :	returns TRUE if valid reference;
+ * 			otherwise FALSE
+ */
+bool sc_get_instance(sigC *);
+/*
+ *	Initialize the compiler instance
+ */
+static bool sc_init(void);
+/*
+ *	Load pre-defined user options
+ *
+ *	Parses available options and assimilates into configurable parameters.
+ */
+static void sc_load_opts();
+static void sc_get_error(string *);
+static bool sc_load_codex(void);
 
 static int process_args(string *);
-static void parse_built_in_options();
-static void parse_options();
-static int find_source_index(string *const, string);
+static int find_option_index(string *, string);
+static size_t count(struct sc_opt[]);
 
 static sigC_option get_option_by_tag(string);
 static sigC_option get_option_by_key(string);
@@ -83,51 +120,48 @@ static bool id10t_compatibility_mode(sigC_param);
 static bool set_output_file(sigC_param);
 
 //	DEFINITIONS
-static bool sc_init()
+// #if DEBUG
+void __reset_sigmac()
 {
-	bool retOk = (sigc = malloc(sizeof(struct sigc))) != NULL;
-
-	if (retOk)
+	//	TODO: SC.free() / dispose() method
+	String.free(SIGC.name);
+	Directory.free(SIGC.cwd);
+	String.free(SIGC.path);
+	//	TODO: ...
+	free(SIGC.ver);
+	//	---------
+	if (SIGC.codex != NULL)
 	{
-		sigc->name = "Sigma.C";
-		sigc->ver = Version.new(maj, min, bld, rc, label);
-		sigc->load = &sc_load_configuration;
-		sigc->configure = &sc_configure;
-		Directory.current(&(sigc->cwd));
-		String.alloc(Path.directory(__FILE__), &(sigc->path));
-		// sigc->cdx_definition = "sigmac.def";
-
-		printf("===== %s =====\n", sigc->name);
-		printf("cwd:  %s\n", sigc->cwd->name);
-		printf("path: %s\n", sigc->path);
-
-		parse_built_in_options();
-		parse_options();
+		Codex.dispose();
 	}
-	else
+	if (SIGC.options != NULL)
 	{
-		//	pError("initialization error");
+		Allocator.dealloc(SIGC.options);
 	}
-
-	return retOk;
+	SIGC.error = NO_ERR;
+	SIGC.is_initialized = false;
 }
-static bool sc_load_configuration(string *argv)
+// #endif
+
+//	compiler delegates
+static bool sigc_load(string *argv)
 {
-	bool retOk = true;
 	//	skip arg[0] CL: sigma.c
 	int arg_count = process_args(++argv);
+	bool retOk = SIGC.error == NO_ERR;
+
 	int ndx = 0;
 	sigC_option opt;
 	sigC_config cfg;
 
-	//	allocate config;
-	sigC_settings = malloc(sizeof(struct sc_cfg) * arg_count);
+	//	allocate configurations; +1 to terminate with \0
+	sigC_settings = Allocator.alloc(sizeof(struct sc_cfg) * (arg_count + 1), INITIALIZED);
 
-	while (ndx < arg_count)
+	while (retOk && ndx < arg_count)
 	{
-		opt = sigc->options + ndx;
+		opt = SIGC.options + ndx;
 
-		cfg = malloc(sizeof(struct sc_cfg));
+		cfg = Allocator.alloc(sizeof(struct sc_cfg), UNINITIALIZED);
 		if (cfg)
 		{
 			cfg->configure = opt->configure;
@@ -138,23 +172,78 @@ static bool sc_load_configuration(string *argv)
 		++ndx;
 	}
 
-	(*sigc).cfgc = arg_count;
+	SIGC.argc = arg_count;
 
+	/*
+	 *	retOk will return TRUE if no CL args are given; FALSE if a bad arg is passed
+	 */
 	return retOk;
 }
-static bool sc_configure()
+/*
+ *	configures the compiler from the loaded user options
+ */
+static bool sigc_configure(void)
 {
 	bool retOk = true;
 	sigC_config ptr = sigC_settings;
 	struct sc_cfg cfg = *ptr;
 
-	while ((ptr - sigC_settings) < sigc->cfgc && retOk)
+	while ((ptr - sigC_settings) < SIGC.argc && retOk)
 	{
 		retOk = cfg.configure(cfg.param);
 		cfg = *++ptr;
 	}
 
 	return retOk;
+}
+static void sigc_dispose(void)
+{
+	//	temporary
+	__reset_sigmac();
+}
+
+static bool sc_init()
+{
+	if (!SIGC.is_initialized)
+	{
+		SIGC.ver = Version.new(maj, min, build, rc, label);
+		Directory.current(&(SIGC.cwd));
+		String.alloc(Path.directory(__FILE__), &(SIGC.path));
+
+		{ //	load built in options
+			size_t optCount = count(DEFAULT_OPTIONS);
+			sigC_option ndx = DEFAULT_OPTIONS;
+			while (ndx - DEFAULT_OPTIONS < optCount)
+			{
+				switch (ndx->opt_type)
+				{
+				case OPT_KEY:
+					switch (ndx->option.key)
+					{
+					case OPTKEY_SOURCE:
+						ndx->configure = &set_source_param;
+
+						break;
+					default:
+						break;
+					}
+					break;
+
+				case OPT_TAG:
+
+					break;
+				}
+
+				++ndx;
+			}
+		}
+
+		sc_load_opts();
+
+		SIGC.is_initialized = true;
+	}
+
+	return SIGC.is_initialized;
 }
 
 static int process_args(string *argv)
@@ -164,7 +253,10 @@ static int process_args(string *argv)
 	int arg_count = 0;
 	IOType io_type;
 	sigC_option opt = NULL;
-	sigc->options = malloc(sizeof(struct sc_opt) * (BLTIN_OPT_CNT + USR_OPT_COUNT));
+
+	//	+1 for terminator
+	int optCount = count(DEFAULT_OPTIONS) + count(USER_OPTIONS) + 1;
+	SIGC.options = Allocator.alloc(sizeof(struct sc_opt) * optCount, UNINITIALIZED);
 
 	/*
 	 * 	Apparently, argv terminates with a NULL ...???
@@ -185,13 +277,14 @@ static int process_args(string *argv)
 			opt = get_option_by_key(arg);
 			//	TODO: some options will terminate any other options
 		}
-		else if (*(ndx + 1) == NULL && (io_type = Path.type(arg) != IO_UNKNOWN))
+		//	does the arg look like a path?
+		else if ((io_type = Path.type(arg) != IO_UNKNOWN))
 		{
-			//	we are at the last arg - expect FILE or PATH
 			opt = set_source_option(arg, io_type);
 		}
 		else
 		{
+			SIGC.error = BAD_ARG;
 			printf("invalid option: %s\n", arg);
 			//	set arg_count to 0 because we don't want to proceed
 			ndx = argv;
@@ -204,14 +297,15 @@ static int process_args(string *argv)
 		if (opt)
 		{
 			//	printf("option valid: %s\n", opt->tag);
-			sigc->options[ndx - argv] = *opt;
+			SIGC.options[ndx - argv] = *opt;
 		}
 		else
 		{
-			printf("invalid option: %s\n", arg);
-			//	set arg_count to 0 because we don't want to proceed
-			free(sigc->options);
-			sigc->options = NULL;
+			SIGC.error = BAD_ARG;
+			ERR_PARAM = arg;
+
+			free(SIGC.options);
+			SIGC.options = NULL;
 			ndx = argv;
 
 			break;
@@ -223,38 +317,50 @@ static int process_args(string *argv)
 
 	if (arg_count > 0)
 	{
-		//		printf("sigc->actions[%d] = NULL\n", arg_count);
-		sigc->options[arg_count] = (struct sc_opt){OPT_NOP, OPT_NO_OP, NULL, NULL};
+		SIGC.options[arg_count] = NULL_OPT;
 	}
 
 	return arg_count;
 }
-static int find_source_index(string *const source, string item)
+static int find_option_index(string *const source, string target)
 {
-	string *ptr = source;
-	string pItem = *ptr;
-	int ndx = -1;
+	string *ndx = source;
+	string item = *ndx;
+	int pos = -1;
 
-	while (pItem)
+	while (item)
 	{
-		if (strcmp(item, pItem) == 0)
+		if (strcmp(target, item) == 0)
 		{
-			ndx = ptr - source;
+			pos = ndx - source;
 			break;
 		}
 
-		pItem = *++ptr;
+		item = *++ndx;
 	}
 
-	return ndx;
+	return pos;
+}
+static size_t count(struct sc_opt source[])
+{
+	sigC_option ndx = source;
+	struct sc_opt item = *ndx;
+
+	while (item.opt_type != NULL_OPT.opt_type)
+	{
+		item = *++ndx;
+	}
+
+	return ndx - source;
 }
 static sigC_option get_option_by_tag(string tag)
 {
-	int tagNdx = find_source_index(TAG_OPTIONS, tag);
+	int tagNdx = find_option_index(TAG_OPTIONS, tag);
 	enum tag_opt tagOption = tagNdx;
-	sigC_option ndx = usr_options;
+	sigC_option ndx = USER_OPTIONS;
 	struct sc_opt opt = *ndx;
-	while (ndx - usr_options < USR_OPT_COUNT)
+	size_t optCount = count(USER_OPTIONS);
+	while (ndx - USER_OPTIONS < optCount)
 	{
 		if (opt.opt_type == OPT_TAG && opt.option.tag == tagOption)
 		{
@@ -267,11 +373,12 @@ static sigC_option get_option_by_tag(string tag)
 }
 static sigC_option get_option_by_key(string key)
 {
-	int keyNdx = find_source_index(KEY_OPTIONS, key);
+	int keyNdx = find_option_index(KEY_OPTIONS, key);
 	enum key_opt keyOption = keyNdx;
-	sigC_option ndx = usr_options;
+	sigC_option ndx = USER_OPTIONS;
 	struct sc_opt opt = *ndx;
-	while (ndx - usr_options < USR_OPT_COUNT)
+	size_t optCount = count(USER_OPTIONS);
+	while (ndx - USER_OPTIONS < optCount)
 	{
 		if (opt.opt_type == OPT_KEY && opt.option.key == keyOption)
 		{
@@ -284,9 +391,9 @@ static sigC_option get_option_by_key(string key)
 }
 static sigC_option set_source_option(string pPath, IOType io_type)
 {
-	sigC_option opt = &bltin_optns[SOURCE];
+	sigC_option opt = &DEFAULT_OPTIONS[SOURCE];
 	opt->configure = &set_source_param;
-	opt->param = malloc(sizeof(sigC_param));
+	opt->param = Allocator.alloc(sizeof(sigC_param), UNINITIALIZED);
 	opt->param->params = pPath;
 	opt->param->type = SOURCE;
 
@@ -299,39 +406,14 @@ static bool set_source_param(sigC_param param)
 
 	return true;
 }
-static void parse_built_in_options()
-{
-	sigC_option ndx = bltin_optns;
-	while (ndx - bltin_optns < BLTIN_OPT_CNT)
-	{
-		switch (ndx->opt_type)
-		{
-		case OPT_KEY:
-			switch (ndx->option.key)
-			{
-			case OPTKEY_SOURCE:
-				ndx->configure = &set_source_param;
 
-				break;
-			default:
-				break;
-			}
-			break;
-
-		case OPT_TAG:
-
-			break;
-		}
-
-		++ndx;
-	}
-}
-static void parse_options()
+static void sc_load_opts()
 {
 	//	printf("parse options:\n");
 
-	sigC_option ndx = usr_options;
-	while (ndx - usr_options < USR_OPT_COUNT)
+	sigC_option ndx = USER_OPTIONS;
+	size_t optCount = count(USER_OPTIONS);
+	while (ndx - USER_OPTIONS < optCount)
 	{
 		//		printf("option: %s\n", opt.tag);
 		switch (ndx->opt_type)
@@ -377,6 +459,23 @@ static void parse_options()
 		++ndx;
 	}
 }
+static void sc_get_error(string *errMsg)
+{
+	int errCode = SIGC.error;
+
+	String.alloc(ERR_MSG_FORMATS[errCode], errMsg);
+	String.format(*errMsg, errMsg, ERR_PARAM);
+}
+static bool sc_load_codex()
+{
+	// bool retOk = Codex.init(SIGC.cwd, &(SIGC.codex));
+	// if (!retOk)
+	// {
+	// 	printf("error loading Sigma.C Codex\n");
+	// }
+
+	return false;
+}
 
 static bool id10t_compatibility_mode(sigC_param param)
 {
@@ -394,7 +493,9 @@ static bool display_help(sigC_param param)
 static bool display_info(sigC_param param)
 {
 	//	TODO: verbose info
-	printf("[TODO] Info ===============\n");
+	printf("===== %s =====\n", SIGC.name);
+	printf("cwd:  %s\n", SIGC.cwd->path);
+	printf("path: %s\n", SIGC.path);
 
 	return false;
 }
@@ -421,38 +522,27 @@ static bool set_output_file(sigC_param param)
 }
 //==============================================
 
-/*
- * 	Relays reference to the Sigma.C compiler. If the compiler has not
- * 	been initialized, this will run initialization.
- *
- * 	sigC**:	reference to the compiler
- * 	bool:	returns TRUE if valid reference;
- * 			otherwise FALSE
- */
-bool __sc_instance(sigC *sc)
+bool sc_get_instance(sigC *sc)
 {
-	if (!sigc && sc_init())
+	bool retOk = SIGC.is_initialized;
+	if (!retOk)
 	{
-		(*sc) = sigc;
+		retOk = sc_init();
+	}
+
+	if (retOk)
+	{
+		(*sc) = &SIGC;
 	}
 	else
 	{
 		(*sc) = NULL;
 	}
 
-	return (*sc) != NULL;
-}
-bool __sc_load_codex()
-{
-	bool retOk = Codex.init(sigc->cwd, &(sigc->codex));
-	if (!retOk)
-	{
-		printf("error loading Sigma.C Codex\n");
-	}
-
 	return retOk;
 }
 
 const struct SigmaC SC = {
-	.instance = &__sc_instance,
-	.load_codex = &__sc_load_codex};
+	.instance = &sc_get_instance,
+	.get_error = &sc_get_error,
+};

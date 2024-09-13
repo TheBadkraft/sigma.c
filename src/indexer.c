@@ -7,7 +7,7 @@
 
 bool default_tokenizer(document, token *);
 
-static bool __doc_load(stream, document *);
+static bool doc_load(stream, document *);
 
 static index_delegate handler = default_tokenizer;
 
@@ -15,7 +15,7 @@ bool default_tokenizer(document pDoc, token *pToken)
 {
     printf("[default indexer]\n");
 
-    (*pToken) = malloc(sizeof(token));
+    (*pToken) = Allocator.alloc(sizeof(token), INITIALIZED);
     if ((*pToken))
     {
         (*pToken)->pPos = pDoc->content;
@@ -29,7 +29,7 @@ bool default_tokenizer(document pDoc, token *pToken)
 bool indexer_init(string name, index_delegate delegate, indexer *pIndexer)
 {
     printf("Sig.C Indexer [%s]... initializing\n", name);
-    (*pIndexer) = malloc(sizeof(struct io_indexer));
+    (*pIndexer) = Allocator.alloc(sizeof(struct io_indexer), UNINITIALIZED);
 
     if (!pIndexer)
     {
@@ -58,7 +58,7 @@ bool indexer_index(document pDoc, token *pToken)
 
 //	======================================
 
-static bool __doc_load(stream pStream, document *pDoc)
+static bool doc_load(stream pStream, document *pDoc)
 {
     if (pStream)
     {
@@ -66,7 +66,7 @@ static bool __doc_load(stream pStream, document *pDoc)
         //      we do it here just in case to prevent an error
         if (!Stream.is_open(pStream))
         {
-            if (!__open_stream(pStream, READ))
+            if (!open_stream(pStream, READ))
             {
                 return false;
             }
@@ -76,7 +76,7 @@ static bool __doc_load(stream pStream, document *pDoc)
             // }
         }
 
-        (*pDoc) = malloc(sizeof(struct io_document));
+        (*pDoc) = Allocator.alloc(sizeof(struct io_document), INITIALIZED);
         String.new(0, &(*pDoc)->name);
         String.copy((*pDoc)->name, pStream->source);
         String.new(pStream->length + 1, &(*pDoc)->content);
@@ -92,7 +92,7 @@ static bool __doc_load(stream pStream, document *pDoc)
 }
 
 const struct Document_T Document = {
-    .load = &__doc_load,
+    .load = &doc_load,
 };
 
 const struct IO_Indexer Indexer = {

@@ -1,9 +1,9 @@
 /*
  *	 ============================================================================
  *	 Name        : Sigma.C Compiler (main)
- *	 Author      : The Badkraft
+ *	 Author      : Badkraft
  *	 Version     :
- *	 Copyright   : 2024 Badkraft Productions
+ *	 Copyright   : 2024, A Badkraft Production
  *	 Description : Sigma.C Compiler entry
  *	 ============================================================================
  */
@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "sigmac.h"
+#include "../sigmac.h"
 
 #define STATUS(okay) okay ? EXIT_SUCCESS : EXIT_FAILURE
 
@@ -53,9 +53,9 @@ int main(int argc, string *argv)
 	 * 	we do get the [WARNING] message below with 0 args.
 	 */
 	retOk = sigc->configure();
-	if (!sigc->cfgc)
+	if (!sigc->argc)
 	{
-		printf("WARNING: args (%d) :: ", sigc->cfgc);
+		printf("WARNING: args (%d) :: ", sigc->argc);
 	}
 
 	/*
@@ -68,7 +68,7 @@ int main(int argc, string *argv)
 	{
 		goto quit_sigmac;
 	}
-	retOk = SC.load_codex();
+	retOk = false; //	SC.load_codex();
 	if (!retOk)
 	{
 		goto quit_sigmac;
@@ -86,7 +86,7 @@ int main(int argc, string *argv)
 
 // this is the first time in 20+ years I've used a label to go to (other than ASM)
 quit_sigmac:
-	status = STATUS(retOk);
+	status = STATUS(sigc->error == NO_ERR);
 	printf("exiting Sigma.C Compiler (%d) ...\n", status);
 
 	return status;
