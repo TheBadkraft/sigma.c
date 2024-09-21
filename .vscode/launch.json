@@ -32,7 +32,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/${workspaceFolderBasename}_dbg",
             "args": [
-                "--version"
+                "./.targets/001/main.C"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

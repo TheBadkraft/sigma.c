@@ -112,11 +112,15 @@ struct sigc
 	/// @brief load argument options
 	/// @param string*
 	/// @return TRUE if options loaded; otherwise FALSE
-	bool (*const load)(string *);
+	bool (*const init)(string *);
 	/// @brief configure the compiler
 	/// @param void
 	/// @return TRUE if configuration successful; otherwise FALSE
 	bool (*const configure)(void);
+	/// @brief load Sigma.C codex
+	/// @param void
+	/// @return TRUE if loaded; otherwise FALSE
+	bool (*const load)(void);
 	/// @brief dispose the compiler object
 	/// @param void
 	/// @return void

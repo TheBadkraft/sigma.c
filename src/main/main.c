@@ -13,6 +13,7 @@
 
 #include "../sigmac.h"
 
+#define NO_ERR 0
 #define STATUS(okay) okay ? EXIT_SUCCESS : EXIT_FAILURE
 
 int main(int argc, string *argv)
@@ -39,7 +40,7 @@ int main(int argc, string *argv)
 	/*
 	 * 	have compiler load the command line arguments
 	 */
-	retOk = sigc->load(argv);
+	retOk = sigc->init(argv);
 	if (!retOk)
 	{
 		goto quit_sigmac;
@@ -60,21 +61,19 @@ int main(int argc, string *argv)
 
 	/*
 	 * 	load the Codex
-
-	 SC.load_codex("./.data/sigmac.def");
-	 //	validate sigc.codex has lexer, document, etc.
 	 */
+	retOk = sigc->load();
+	//	validate sigc.codex has lexer, document, etc.
 	if (!retOk)
 	{
 		goto quit_sigmac;
 	}
-	retOk = false; //	SC.load_codex();
+	retOk = Parser.load_sources();
 	if (!retOk)
 	{
 		goto quit_sigmac;
 	}
 
-	printf("loaded Codex: %s\n", sigc->codex->definition->name);
 	// printf("%s\n", sigc->codex->definition->content->buffer);
 
 /*

@@ -12,21 +12,16 @@ void _load_fail_invalid_key(void);
 void _load_fail_invalid_tag(void);
 void _execute_paramless_option(void);
 void _parameterize_source(void);
+void _wildcard_source(void);
 
 //  utility prototypes
 size_t _count_options(sigC);
 void _output_sigmac_info(sigC);
-
-static string defPath = "./.data/sigmac.def";
-file fDef = NULL;
+void _output_option_info(sigC_option);
+void _for_each_option(sigC_option, void (*action)(sigC_option));
 
 int main(int argc, string *argv)
 {
-    if (Utils.path_exists(defPath))
-    {
-        fDef = File.new(defPath);
-    }
-
     BEGIN_SET(Sigma.C, true)
     {
         TEST(_get_sigc_instance);
@@ -35,12 +30,11 @@ int main(int argc, string *argv)
         TEST(_load_fail_invalid_tag);
         TEST(_execute_paramless_option);
         TEST(_parameterize_source);
+        TEST(_wildcard_source);
     }
     END_SET(Sigma.C)
 
     TEST_STATS();
-
-    File.free(fDef);
 }
 void _output_sigmac_info(sigC sigc)
 {
@@ -55,8 +49,16 @@ void _output_sigmac_info(sigC sigc)
         writefln("error:\n      %s", errMsg);
         String.free(errMsg);
     }
+    if (sigc->options != NULL)
+    {
+        _for_each_option(sigc->options, _output_option_info);
+    }
 }
-
+void _output_option_info(sigC_option option)
+{
+    writefln("option: %s", option->option);
+    writefln("param:  %s", option->param);
+}
 size_t _count_options(sigC sigc)
 {
     size_t count = 0;
@@ -73,6 +75,17 @@ size_t _count_options(sigC sigc)
     }
 
     return count;
+}
+void _for_each_option(sigC_option option, void (*action)(sigC_option))
+{
+    sigC_option ndx = option;
+    struct sc_opt opt = *ndx;
+
+    while (opt.opt_type != -1)
+    {
+        action(&opt);
+        opt = *++ndx;
+    }
 }
 
 //		================================ TEST CASES ================================
@@ -91,7 +104,7 @@ void _load_arg_help()
 
     //  simulating argv means the first arg is the command line executable, last element should be NULL
     string *argv = (string[]){"sigma.c", "--help", NULL};
-    assert(sigc->load(argv));
+    assert(sigc->init(argv));
     assert(_count_options(sigc) == 1);
 
     _output_sigmac_info(sigc);
@@ -104,7 +117,7 @@ void _load_fail_invalid_key()
 
     string *argv = (string[]){"sigma.c", "-X", NULL};
 
-    assert(!sigc->load(argv));
+    assert(!sigc->init(argv));
 
     _output_sigmac_info(sigc);
     sigc->dispose();
@@ -116,7 +129,7 @@ void _load_fail_invalid_tag()
 
     string *argv = (string[]){"sigma.c", "--Foo", NULL};
 
-    assert(!sigc->load(argv));
+    assert(!sigc->init(argv));
 
     _output_sigmac_info(sigc);
     sigc->dispose();
@@ -127,7 +140,7 @@ void _execute_paramless_option()
     SC.instance(&sigc);
 
     string *argv = (string[]){"sigma.c", "--info", NULL};
-    sigc->load(argv);
+    sigc->init(argv);
 
     sigC_option option = sigc->options;
     //  --info returns false (so further configuration will not follow)
@@ -142,5 +155,24 @@ void _parameterize_source()
     SC.instance(&sigc);
 
     string *argv = (string[]){"sigma.c", "./.targets/001/main.C", NULL};
-    sigc->load(argv);
+    sigc->init(argv);
+
+    sigC_option option = sigc->options;
+    assert(option->configure(option->param));
+
+    _output_sigmac_info(sigc);
+    sigc->dispose();
+}
+void _wildcard_source()
+{
+    sigC sigc;
+    SC.instance(&sigc);
+
+    string *argv = (string[]){"sigma.c", "./.targets/001/*.C", NULL};
+    sigc->init(argv);
+
+    assert(_count_options(sigc) == 1);
+
+    _output_sigmac_info(sigc);
+    sigc->dispose();
 }

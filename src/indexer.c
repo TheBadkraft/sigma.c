@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "open/io.h"
 #include "open/internal/internal_io.h"
@@ -28,13 +29,13 @@ bool default_tokenizer(document pDoc, token *pToken)
 
 bool indexer_init(string name, index_delegate delegate, indexer *pIndexer)
 {
-    printf("Sig.C Indexer [%s]... initializing\n", name);
+    printf("Sig.C Indexer [%s] ... initializing ", name);
     (*pIndexer) = Allocator.alloc(sizeof(struct io_indexer), UNINITIALIZED);
 
     if (!pIndexer)
     {
         //  throwErr()
-        printf("Error initializing Indexer ... OOPS!\n");
+        printf("\nERROR: Indexer could not be initialized ... OOPS!\n");
     }
     else
     { //  configure
@@ -47,6 +48,8 @@ bool indexer_init(string name, index_delegate delegate, indexer *pIndexer)
         {
             (*pIndexer)->tokenize = handler;
         }
+
+        printf("... ");
     }
 
     return (*pIndexer) != NULL;
@@ -77,15 +80,19 @@ static bool doc_load(stream pStream, document *pDoc)
         }
 
         (*pDoc) = Allocator.alloc(sizeof(struct io_document), INITIALIZED);
-        String.new(0, &(*pDoc)->name);
-        String.copy((*pDoc)->name, pStream->source);
+        String.new(0, &(*pDoc)->source);
+        String.copy((*pDoc)->source, pStream->source);
         String.new(pStream->length + 1, &(*pDoc)->content);
 
-        int ndx = 0;
-        // while (Stream.read(pStream, (*pDoc)->content->buffer + ndx))
-        // {
-        //     ++ndx;
-        // }
+        char *ndx = (*pDoc)->content;
+        int pos = ndx - (*pDoc)->content;
+        while ((*ndx = (char)fgetc(pStream->fstream)) != EOF)
+        {
+            ++ndx;
+        }
+
+        //  tack NULL at the end
+        *ndx = '\0';
     }
 
     return (*pDoc) != NULL;

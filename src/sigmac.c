@@ -10,7 +10,7 @@
 #include "sigmac.h"
 
 // #if DEBUG
-#include "test/sigc_tests.h"
+// #include "test/sigc_tests.h"
 // #endif
 
 //	version
@@ -58,11 +58,15 @@ struct sc_opt USER_OPTIONS[] = {
 /// @brief load argument options
 /// @param argv
 /// @return TRUE if options loaded; otherwise FALSE
-static bool sigc_load(string *);
+static bool sigc_init(string *);
 /// @brief configure the compiler
 /// @param void
 /// @return TRUE if configuration successful; otherwise FALSE
 static bool sigc_configure(void);
+/// @brief load Sigma.C codex
+/// @param void
+/// @return TRUE if loaded; otherwise FALSE
+static bool sigc_load(void);
 /// @brief dispose compiler
 /// @param  void
 static void sigc_dispose(void);
@@ -72,8 +76,9 @@ static struct sigc SIGC = {
 	.is_initialized = false,
 	.name = "Sigma.C",
 	.argc = 0,
-	.load = &sigc_load,
+	.init = &sigc_init,
 	.configure = &sigc_configure,
+	.load = &sigc_load,
 	.dispose = &sigc_dispose,
 };
 
@@ -98,9 +103,8 @@ static bool sc_init(void);
  *
  *	Parses available options and assimilates into configurable parameters.
  */
-static void sc_load_opts();
+static void sc_load_opts(void);
 static void sc_get_error(string *);
-static bool sc_load_codex(void);
 
 static int process_args(string *);
 static int find_option_index(string *, string);
@@ -110,8 +114,7 @@ static sigC_option get_option_by_tag(string);
 static sigC_option get_option_by_key(string);
 static sigC_option set_source_option(string, IOType);
 
-static bool set_source_param();
-
+static bool set_source(sigC_param);
 static bool display_help(sigC_param);
 static bool display_info(sigC_param);
 static bool display_version(sigC_param);
@@ -144,7 +147,7 @@ void __reset_sigmac()
 // #endif
 
 //	compiler delegates
-static bool sigc_load(string *argv)
+static bool sigc_init(string *argv)
 {
 	//	skip arg[0] CL: sigma.c
 	int arg_count = process_args(++argv);
@@ -221,7 +224,7 @@ static bool sc_init()
 					switch (ndx->option.key)
 					{
 					case OPTKEY_SOURCE:
-						ndx->configure = &set_source_param;
+						ndx->configure = &set_source;
 
 						break;
 					default:
@@ -284,6 +287,7 @@ static int process_args(string *argv)
 		}
 		else
 		{
+			bool isPath = Path.exists(arg);
 			SIGC.error = BAD_ARG;
 			printf("invalid option: %s\n", arg);
 			//	set arg_count to 0 because we don't want to proceed
@@ -392,22 +396,15 @@ static sigC_option get_option_by_key(string key)
 static sigC_option set_source_option(string pPath, IOType io_type)
 {
 	sigC_option opt = &DEFAULT_OPTIONS[SOURCE];
-	opt->configure = &set_source_param;
+	opt->configure = &set_source;
 	opt->param = Allocator.alloc(sizeof(sigC_param), UNINITIALIZED);
 	opt->param->params = pPath;
 	opt->param->type = SOURCE;
 
 	return opt;
 }
-static bool set_source_param(sigC_param param)
-{
-	//	TODO: read source input parameter
-	printf("[TODO] Source: %s\n", param->params);
 
-	return true;
-}
-
-static void sc_load_opts()
+static void sc_load_opts(void)
 {
 	//	printf("parse options:\n");
 
@@ -466,17 +463,23 @@ static void sc_get_error(string *errMsg)
 	String.alloc(ERR_MSG_FORMATS[errCode], errMsg);
 	String.format(*errMsg, errMsg, ERR_PARAM);
 }
-static bool sc_load_codex()
+static bool sigc_load()
 {
-	// bool retOk = Codex.init(SIGC.cwd, &(SIGC.codex));
-	// if (!retOk)
-	// {
-	// 	printf("error loading Sigma.C Codex\n");
-	// }
+	bool retOk = Codex.init(SIGC.cwd, &(SIGC.codex));
+	if (!retOk)
+	{
+		printf("\nERROR: Codex load failed\n");
+	}
 
-	return false;
+	return retOk;
 }
 
+static bool set_source(sigC_param param)
+{
+	//	TODO: read source input parameter
+	// printf("[TODO] Source: %s\n", param == NULL ? "NULL" : param->params);
+	return Parser.add_source(param->params);
+}
 static bool id10t_compatibility_mode(sigC_param param)
 {
 	printf("ID10t compatibility mode [TRUE]\n");

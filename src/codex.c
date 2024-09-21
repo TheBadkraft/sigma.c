@@ -6,11 +6,16 @@
 
 #include "codex.h"
 #include "ebnf_indexer.h"
+#include "source_indexer.h"
 
-static codex sigc_codex;
+static codex CODEX;
 static file def_file = NULL;
 
 static const string DEF_PATH = ".data/sigmac.def";
+
+//	TODO: collection (list) type
+static const int DEF_LIST_SIZE = 1;
+static document SOURCES = NULL;
 
 //	parser version
 const byte prs_maj = 0;
@@ -21,11 +26,12 @@ string prs_label = "stark";
 
 //	PROTOTYPES
 static bool codex_init(directory);
-static bool codex_load_definition();
-static void codex_dispose();
+static bool codex_load_definition(void);
+static void codex_dispose(void);
 
-static parser parser_new();
-static bool parser_load_ruleset();
+static parser parser_new(void);
+static bool parser_load_ruleset(void);
+static bool parser_add_source(string);
 //	DEFINITIONS
 //	========================= Codex =========================
 
@@ -34,7 +40,7 @@ static bool parser_load_ruleset();
 */
 static bool codex_init(directory cwDir)
 {
-	sigc_codex = NULL;
+	CODEX = NULL;
 
 	string def_path;
 	String.new(0, &def_path);
@@ -46,10 +52,10 @@ static bool codex_init(directory cwDir)
 		def_file = File.new(def_path);
 		String.free(def_path);
 
-		sigc_codex = Allocator.alloc(sizeof(codex), UNINITIALIZED);
+		CODEX = Allocator.alloc(sizeof(codex), UNINITIALIZED);
 	}
 
-	if (!sigc_codex)
+	if (!CODEX)
 	{
 		retOk = false;
 		//	some error status message would be nice
@@ -57,8 +63,8 @@ static bool codex_init(directory cwDir)
 	else
 	{
 
-		sigc_codex->parser = parser_new();
-		retOk = sigc_codex->parser != NULL;
+		CODEX->parser = parser_new();
+		retOk = CODEX->parser != NULL;
 	}
 
 	return retOk;
@@ -69,19 +75,20 @@ static bool codex_init(directory cwDir)
 static bool codex_load_definition()
 {
 	bool retOk = true;
-	stream pStream;
+	stream fStream;
 
-	if ((pStream = Stream.new(DEF_PATH)) != NULL)
+	if ((fStream = Stream.new(DEF_PATH)) != NULL)
 	{
-		if (!(retOk = Document.load(pStream, &(sigc_codex->definition))))
+		if (!(retOk = Document.load(fStream, &(CODEX->definition))))
 		{
-			printf("error loading doc (%s) from stream (%s)\n", sigc_codex->definition->name, def_file->path);
+			printf("\nERROR: could not load doc (%s) from stream (%s)\n", CODEX->definition->source, def_file->path);
 		}
 	}
 	else
 	{
-		printf("error creating stream: %s", DEF_PATH);
+		printf("\nERROR: stream initialization failed: %s", DEF_PATH);
 	}
+	// Stream.free(fStream);
 
 	return retOk;
 }
@@ -101,13 +108,16 @@ static bool parser_load_ruleset()
 {
 	bool retOk = true;
 	indexer pIndexer;
-	Indexer.init(sigc_codex->definition->name, ebnf_tokenize, &pIndexer);
+	Indexer.init(CODEX->definition->source, index_ebnf, &pIndexer);
 
 	token pToken;
-	pIndexer->tokenize(sigc_codex->definition, &pToken);
+	pIndexer->tokenize(CODEX->definition, &pToken);
 
+	// #if DEBUG
 	char *word = NULL;
 	token ptr = pToken;
+
+	printf("\n");
 	while (ptr)
 	{
 		Token.word(ptr, &word);
@@ -115,10 +125,72 @@ static bool parser_load_ruleset()
 
 		ptr = ptr->next;
 	}
+	// #endif
 
 	return retOk;
 }
+static bool parser_add_source(string srcPath)
+{
+	bool retOk = true;
+	//	at the moment we are only adding one source file so not much error checking, etc. here
+	if (!SOURCES)
+	{
+		SOURCES = Allocator.alloc(sizeof(document) * DEF_LIST_SIZE + 1, INITIALIZED);
+	}
 
+	//	load the document
+	document srcDoc;
+	stream fStream;
+
+	if ((fStream = Stream.new(srcPath)) != NULL)
+	{
+		if (!(retOk = Document.load(fStream, &srcDoc)))
+		{
+			printf("\nERROR: could not load doc (%s) from stream (%s)\n", CODEX->definition->source, def_file->path);
+		}
+	}
+	else
+	{
+		printf("\nERROR: stream initialization failed: %s", DEF_PATH);
+	}
+	//	TODO: investigate
+	// Stream.free(fStream);
+
+	SOURCES = srcDoc;
+
+	return retOk && SOURCES != NULL;
+}
+static bool parser_load_sources(void)
+{
+	bool retOk = true;
+	indexer pIndexer;
+	//	again, for now this is working under the assumption that there is a single source file
+	Indexer.init("source", index_source, &pIndexer);
+	printf("\n");
+
+	token pToken;
+	pIndexer->tokenize(SOURCES, &pToken);
+
+	// #if DEBUG
+	string word = NULL;
+	token ptr = pToken;
+	while (ptr)
+	{
+		Token.word(ptr, &word);
+		if (word == NULL)
+		{
+			break;
+		}
+
+		printf("%s%s", *word != '\0' ? word : "", *word == '\n' ? "" : "\n");
+
+		ptr = ptr->next;
+	}
+	String.free(word);
+	// #endif
+
+	return retOk;
+}
 //	=========================================================
 
 /*
@@ -129,13 +201,13 @@ static bool parser_load_ruleset()
  * 	bool:	returns TRUE if valid reference;
  * 			otherwise FALSE
  */
-bool __codex_instance(directory pCWDir, codex *cdx)
+bool codex_instance(directory pCWDir, codex *cdx)
 {
 	bool retOk = true;
 
-	if (!sigc_codex && codex_init(pCWDir))
+	if (!CODEX && codex_init(pCWDir))
 	{
-		(*cdx) = sigc_codex;
+		(*cdx) = CODEX;
 		retOk = codex_load_definition();
 	}
 	else
@@ -144,13 +216,33 @@ bool __codex_instance(directory pCWDir, codex *cdx)
 		retOk = false;
 	}
 
-	if (retOk)
+	if (retOk && (retOk = parser_load_ruleset()))
 	{
-		retOk = parser_load_ruleset();
+		printf("Codex loaded!\n");
 	}
 
 	return retOk;
 }
+void codex_dispose()
+{
+	if (CODEX)
+	{
+		if (CODEX->parser)
+		{
+			Allocator.dealloc(CODEX->parser);
+		}
+
+		Allocator.dealloc(CODEX);
+	}
+
+	CODEX = NULL;
+}
 
 const struct SC_Codex Codex = {
-	.init = &__codex_instance};
+	.init = &codex_instance,
+	.dispose = &codex_dispose,
+};
+const struct SC_Parser Parser = {
+	.add_source = &parser_add_source,
+	.load_sources = &parser_load_sources,
+};

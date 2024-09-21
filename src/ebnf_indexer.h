@@ -4,83 +4,55 @@
 #include "open/types.h"
 #include "indexer.h"
 
-const char SPACE = ' ';
-const char NEWLINE = '\n';
-const char PCT_ENDLINE = ';';
+const string ASSIGNMENT = ":=";
 
-const char *ASSIGNMENT = ":=";
-
-static bool is(char c, char cmp)
-{
-    return c == cmp;
-}
-static bool is_noise(char *c)
-{
-    return is(*c, SPACE) || is(*c, NEWLINE);
-}
-static char *get_word(char *ptr, size_t *wrdLen, size_t strLen)
-{
-    char *pPos = ptr;
-    char *end;
-
-    while (pPos - ptr < strLen)
-    {
-        if (is(*pPos, SPACE))
-        {
-            //  (*j)++;
-            (*wrdLen) = (pPos - ptr);
-            end = pPos - 1;
-
-            break;
-        }
-        ++pPos;
-    }
-
-    return end;
-}
-bool ebnf_tokenize(document pDoc, token *pTknHead)
+bool index_ebnf(document pDoc, token *pTknHead)
 {
     string pSrc;
-    string ptr = pSrc = pDoc->content;
-    size_t ndx = 0;
+    char *ndx = pSrc = pDoc->content;
+    size_t pos = ndx - pSrc;
     size_t length = 0;
-    size_t srcLen = strlen(pSrc);
+    size_t srcLen = String.length(pSrc);
     int line = 1;
-    string pWrd;
+    char *wrdEnd;
     (*pTknHead) = NULL;
     token pCurrent = NULL;
 
-    while (ndx < srcLen)
+    while (pos < srcLen)
     {
-        if (is_noise(ptr))
+        if (is_noise(*ndx))
         {
-            ++ptr;
             ++ndx;
+            ++pos;
             continue;
         }
-        else if (is(*ptr, PCT_ENDLINE))
+        else if (is(*ndx, ENDLINE))
         {
-            pWrd = ptr;
+            ++line;
+            wrdEnd = ndx;
             length = 1;
         }
         else
         {
-            pWrd = get_word(ptr, &length, srcLen - ndx);
+            //  pass NULL to delims param to default SPACE word delimeter
+            wrdEnd = get_word(ndx, NULL, srcLen - pos);
+            length = wrdEnd - ndx + 1;
         }
         //    	printf("[%d] start: %ld len: %ld    [w:%c-%c]\n", line, start, length, ptr[0], pWrd[0]);
 
         if (!(*pTknHead))
         {
-            pCurrent = (*pTknHead) = Token.new(ptr, length);
+            pCurrent = (*pTknHead) = Token.new(ndx, length);
         }
         else if (!pCurrent->next)
         {
-            pCurrent = pCurrent->next = Token.new(ptr, length);
+            pCurrent = pCurrent->next = Token.new(ndx, length);
         }
 
-        ndx += length;
-        ptr = pWrd + 1;
+        pos += length;
+        ndx = ++wrdEnd;
     }
+
     return (*pTknHead) != NULL;
 }
 

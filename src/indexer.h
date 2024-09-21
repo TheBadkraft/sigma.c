@@ -9,7 +9,7 @@
 
 struct io_document
 {
-    string name;
+    string source;
     string content;
 };
 
@@ -33,5 +33,62 @@ extern const struct IO_Indexer
 {
     bool (*init)(string, index_delegate, indexer *);
     index_delegate index;
+    //  TODO: !!!
+    void (*dispose)(void);
 } Indexer;
+
+//  generic indexer functions
+static const char SPACE = ' ';
+static const char NEWLINE = '\n';
+static const char ENDLINE = ';';
+
+static bool is(char c, char cmp)
+{
+    return c == cmp;
+}
+static bool any(char c, string cmps)
+{
+    //  to use this properly, terminate series with '\0'
+    bool retAny = false;
+    char *ndx = cmps;
+    while (*ndx != '\0')
+    {
+        retAny = is(c, *ndx);
+
+        if (retAny)
+        {
+            break;
+        }
+
+        ++ndx;
+    }
+
+    return retAny;
+}
+static bool is_noise(char c)
+{
+    return is(c, SPACE) || is(c, NEWLINE);
+}
+static char *get_word(char *pChar, string delims, size_t strLen)
+{
+    if (delims == NULL)
+    {
+        delims = " \0";
+    }
+    char *ndx = pChar;
+    char *end;
+
+    while (ndx - pChar < strLen)
+    {
+        if (any(*ndx, delims))
+        {
+            end = ndx - 1;
+
+            break;
+        }
+        ++ndx;
+    }
+
+    return end;
+}
 #endif //  _INDEXER_H
