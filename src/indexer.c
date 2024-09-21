@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "open/io.h"
 #include "open/internal/internal_io.h"
@@ -7,7 +8,7 @@
 
 bool default_tokenizer(document, token *);
 
-static bool __doc_load(stream, document *);
+static bool doc_load(stream, document *);
 
 static index_delegate handler = default_tokenizer;
 
@@ -15,7 +16,7 @@ bool default_tokenizer(document pDoc, token *pToken)
 {
     printf("[default indexer]\n");
 
-    (*pToken) = malloc(sizeof(token));
+    (*pToken) = Allocator.alloc(sizeof(token), INITIALIZED);
     if ((*pToken))
     {
         (*pToken)->pPos = pDoc->content;
@@ -28,13 +29,13 @@ bool default_tokenizer(document pDoc, token *pToken)
 
 bool indexer_init(string name, index_delegate delegate, indexer *pIndexer)
 {
-    printf("Sig.C Indexer [%s]... initializing\n", name);
-    (*pIndexer) = malloc(sizeof(struct io_indexer));
+    printf("Sig.C Indexer [%s] ... initializing ", name);
+    (*pIndexer) = Allocator.alloc(sizeof(struct io_indexer), UNINITIALIZED);
 
     if (!pIndexer)
     {
         //  throwErr()
-        printf("Error initializing Indexer ... OOPS!\n");
+        printf("\nERROR: Indexer could not be initialized ... OOPS!\n");
     }
     else
     { //  configure
@@ -47,6 +48,8 @@ bool indexer_init(string name, index_delegate delegate, indexer *pIndexer)
         {
             (*pIndexer)->tokenize = handler;
         }
+
+        printf("... ");
     }
 
     return (*pIndexer) != NULL;
@@ -58,7 +61,7 @@ bool indexer_index(document pDoc, token *pToken)
 
 //	======================================
 
-static bool __doc_load(stream pStream, document *pDoc)
+static bool doc_load(stream pStream, document *pDoc)
 {
     if (pStream)
     {
@@ -66,7 +69,7 @@ static bool __doc_load(stream pStream, document *pDoc)
         //      we do it here just in case to prevent an error
         if (!Stream.is_open(pStream))
         {
-            if (!__open_stream(pStream, READ))
+            if (!open_stream(pStream, READ))
             {
                 return false;
             }
@@ -76,23 +79,27 @@ static bool __doc_load(stream pStream, document *pDoc)
             // }
         }
 
-        (*pDoc) = malloc(sizeof(struct io_document));
-        String.new(0, &(*pDoc)->name);
-        String.copy((*pDoc)->name, pStream->source);
+        (*pDoc) = Allocator.alloc(sizeof(struct io_document), INITIALIZED);
+        String.new(0, &(*pDoc)->source);
+        String.copy((*pDoc)->source, pStream->source);
         String.new(pStream->length + 1, &(*pDoc)->content);
 
-        int ndx = 0;
-        // while (Stream.read(pStream, (*pDoc)->content->buffer + ndx))
-        // {
-        //     ++ndx;
-        // }
+        char *ndx = (*pDoc)->content;
+        int pos = ndx - (*pDoc)->content;
+        while ((*ndx = (char)fgetc(pStream->fstream)) != EOF)
+        {
+            ++ndx;
+        }
+
+        //  tack NULL at the end
+        *ndx = '\0';
     }
 
     return (*pDoc) != NULL;
 }
 
 const struct Document_T Document = {
-    .load = &__doc_load,
+    .load = &doc_load,
 };
 
 const struct IO_Indexer Indexer = {

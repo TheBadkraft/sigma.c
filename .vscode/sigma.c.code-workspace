@@ -12,7 +12,11 @@
 			"version.h": "c",
 			"ebnf_indexer.h": "c",
 			"indexer.h": "c",
-			"token.h": "c"
+			"token.h": "c",
+			"test.h": "c",
+			"codex.h": "c",
+			"string.h": "c",
+			"main.C": "cpp"
 		}
 	},
 }

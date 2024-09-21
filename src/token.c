@@ -3,15 +3,15 @@
 
 #include "open/token.h"
 
-token __token_new(char *, size_t);
-bool __token_word(token, string *);
-void __token_free(token);
+token token_new(char *, size_t);
+bool token_word(token, string *);
+void token_free(token);
 /*
  * Create a new token from begin and length
  */
-token __token_new(char *pPos, size_t length)
+token token_new(char *pPos, size_t length)
 {
-	token pToken = malloc(sizeof(token));
+	token pToken = Allocator.alloc(sizeof(token), UNINITIALIZED);
 	pToken->pPos = pPos;
 	pToken->length = length;
 	//	pToken->prev = NULL;
@@ -19,7 +19,7 @@ token __token_new(char *pPos, size_t length)
 
 	return pToken;
 }
-bool __token_word(token pToken, string *pWord)
+bool token_word(token pToken, string *pWord)
 {
 	if (!(*pWord))
 	{
@@ -34,7 +34,7 @@ bool __token_word(token pToken, string *pWord)
 
 	return (*pWord) != NULL;
 }
-void __token_free(token pToken)
+void token_free(token pToken)
 {
 	token pTemp;
 	while (pToken)
@@ -46,6 +46,6 @@ void __token_free(token pToken)
 }
 
 const struct Token_T Token = {
-	.new = &__token_new,
-	.word = &__token_word,
-	.free = &__token_free};
+	.new = &token_new,
+	.word = &token_word,
+	.free = &token_free};

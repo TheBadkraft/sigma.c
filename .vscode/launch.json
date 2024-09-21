@@ -1,13 +1,38 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "debug",
+        {   "name": "test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/${fileBasenameNoExtension}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build test",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "miDebuggerArgs": "${workspaceFolder}"
+        },
+        {   "name": "debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/${workspaceFolderBasename}_dbg",
             "args": [
-                "--version"
+                "./.targets/001/main.C"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -30,8 +55,7 @@
             "miDebuggerPath": "/usr/bin/gdb",
             "miDebuggerArgs": "${workspaceFolder}"
         },
-        {
-            "name": "launch",
+        {   "name": "launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",

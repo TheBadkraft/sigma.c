@@ -12,11 +12,14 @@
 
 #include "indexer.h"
 
-typedef token rule_def;
-
 struct sc_rule
 {
-	rule_def definition;
+	token definition;
+};
+
+struct sc_source
+{
+	token source;
 };
 
 struct sc_parser
@@ -35,6 +38,7 @@ struct sc_codex
 };
 
 typedef struct sc_rule *rule;
+typedef struct sc_source *source;
 typedef struct sc_codex *codex;
 typedef struct sc_parser *parser;
 
@@ -42,6 +46,13 @@ extern const struct SC_Codex
 {
 	//	initialize a singleton instance of the Codex
 	bool (*init)(directory, codex *);
+	void (*dispose)();
 } Codex;
+
+extern const struct SC_Parser
+{
+	bool (*add_source)(string);
+	bool (*load_sources)(void);
+} Parser;
 
 #endif /* _CODEX_H_ */
