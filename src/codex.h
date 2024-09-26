@@ -52,6 +52,7 @@ extern const struct SC_Codex
 extern const struct SC_Parser
 {
 	bool (*add_source)(string);
+	bool (*clear_sources)(void);
 	bool (*load_sources)(void);
 } Parser;
 
