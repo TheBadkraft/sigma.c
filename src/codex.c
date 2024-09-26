@@ -30,8 +30,9 @@ static bool codex_load_definition(void);
 static void codex_dispose(void);
 
 static parser parser_new(void);
-static bool parser_load_ruleset(void);
 static bool parser_add_source(string);
+static bool parser_clear_sources(void);
+static bool parser_load_ruleset(void);
 //	DEFINITIONS
 //	========================= Codex =========================
 
@@ -114,18 +115,43 @@ static bool parser_load_ruleset()
 	pIndexer->tokenize(CODEX->definition, &pToken);
 
 	// #if DEBUG
-	char *word = NULL;
-	token ptr = pToken;
-
-	printf("\n");
-	while (ptr)
-	{
-		Token.word(ptr, &word);
-		printf("%s\n", word);
-
-		ptr = ptr->next;
-	}
+	// string word = NULL;
+	// token ptr = pToken;
+	// printf("\n");
+	// while (ptr)
+	// {
+	// 	Token.word(ptr, &word);
+	// 	if (word == NULL)
+	// 	{
+	// 		break;
+	// 	}
+	// 	printf("%s%s", *word != '\0' ? word : "", *word == '\n' ? "" : "\n");
+	// 	ptr = ptr->next;
+	// }
+	// String.free(word);
 	// #endif
+
+	/*
+		The roadblock here is "what does a RuleSet" even look like and how do the component Rules even
+		function? Does the concept of a Rule even make sense? There appears to be a school of thought
+		that directs the EBNF to 'prioritize' productions from highest to lowest. In a way, this seems
+		counter-intuitive as all source is built on LETTERS, DIGITS, & SYMBOLS.
+
+		So my question, intuitively, is: what am I looking at?
+		 -	Letters?
+		 -	Digits?
+		 -	Symbols?
+		 -	Alphanumerics?
+
+		Once I know what I am looking at from the smallest component, it seems logical to progress
+		from the bottom up. That said, I am (at the moment) speaking with the understanding that I
+		don't know what I don't know.
+
+		It doesn't seem unreasonable to approach parsing from the smallest components and determine
+		(from how we analyze what we're looking at) how a Rule is composed and how it should
+		function. The Rule should result in an functional analyzer composed from a production. A RuleSet
+		is a collection of Rules.
+	*/
 
 	return retOk;
 }
@@ -160,6 +186,20 @@ static bool parser_add_source(string srcPath)
 
 	return retOk && SOURCES != NULL;
 }
+static bool parser_clear_sources(void)
+{
+	bool retOk = SOURCES != NULL;
+	if (retOk)
+	{
+		//	TODO: `for_each` function
+		if (!(retOk = Document.dispose(SOURCES)))
+		{
+			printf("ERROR: fault disposing document %s\n", SOURCES->source);
+		}
+	}
+
+	return retOk;
+}
 static bool parser_load_sources(void)
 {
 	bool retOk = true;
@@ -172,21 +212,19 @@ static bool parser_load_sources(void)
 	pIndexer->tokenize(SOURCES, &pToken);
 
 	// #if DEBUG
-	string word = NULL;
-	token ptr = pToken;
-	while (ptr)
-	{
-		Token.word(ptr, &word);
-		if (word == NULL)
-		{
-			break;
-		}
-
-		printf("%s%s", *word != '\0' ? word : "", *word == '\n' ? "" : "\n");
-
-		ptr = ptr->next;
-	}
-	String.free(word);
+	// string word = NULL;
+	// token ptr = pToken;
+	// while (ptr)
+	// {
+	// 	Token.word(ptr, &word);
+	// 	if (word == NULL)
+	// 	{
+	// 		break;
+	// 	}
+	// 	printf("%s%s", *word != '\0' ? word : "", *word == '\n' ? "" : "\n");
+	// 	ptr = ptr->next;
+	// }
+	// String.free(word);
 	// #endif
 
 	return retOk;
@@ -244,5 +282,7 @@ const struct SC_Codex Codex = {
 };
 const struct SC_Parser Parser = {
 	.add_source = &parser_add_source,
+	.clear_sources = &parser_clear_sources,
 	.load_sources = &parser_load_sources,
+
 };

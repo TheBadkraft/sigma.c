@@ -4,6 +4,7 @@
 #include "open/types.h"
 #include "indexer.h"
 
+const char ENDSTMT = ';';
 const char OPN_BRACE = '{'; // 2:'{'!'}'
 const char CLS_BRACE = '}'; // ...
 const char OPN_BRACK = '['; // 2:'['!']'
@@ -94,7 +95,7 @@ static bool is_newline(char c)
 }
 static bool is_symbol(char c)
 {
-    return is_paired(c) || is(c, ENDLINE);
+    return is_paired(c) || is(c, ENDSTMT);
 }
 static bool is_paired(char c)
 {

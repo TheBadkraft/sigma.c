@@ -27,6 +27,7 @@ typedef struct io_indexer *indexer;
 extern const struct Document_T
 {
     bool (*load)(stream, document *);
+    bool (*dispose)(document);
 } Document;
 
 extern const struct IO_Indexer
@@ -40,13 +41,12 @@ extern const struct IO_Indexer
 //  generic indexer functions
 static const char SPACE = ' ';
 static const char NEWLINE = '\n';
-static const char ENDLINE = ';';
 
 static bool is(char c, char cmp)
 {
     return c == cmp;
 }
-static bool any(char c, string cmps)
+static bool is_any(char c, string cmps)
 {
     //  to use this properly, terminate series with '\0'
     bool retAny = false;
@@ -80,7 +80,7 @@ static char *get_word(char *pChar, string delims, size_t strLen)
 
     while (ndx - pChar < strLen)
     {
-        if (any(*ndx, delims))
+        if (is_any(*ndx, delims))
         {
             end = ndx - 1;
 

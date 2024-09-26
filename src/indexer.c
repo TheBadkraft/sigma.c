@@ -9,6 +9,7 @@
 bool default_tokenizer(document, token *);
 
 static bool doc_load(stream, document *);
+static bool doc_dispose(document);
 
 static index_delegate handler = default_tokenizer;
 
@@ -61,7 +62,7 @@ bool indexer_index(document pDoc, token *pToken)
 
 //	======================================
 
-static bool doc_load(stream pStream, document *pDoc)
+static bool doc_load(stream pStream, document *doc)
 {
     if (pStream)
     {
@@ -79,13 +80,13 @@ static bool doc_load(stream pStream, document *pDoc)
             // }
         }
 
-        (*pDoc) = Allocator.alloc(sizeof(struct io_document), INITIALIZED);
-        String.new(0, &(*pDoc)->source);
-        String.copy((*pDoc)->source, pStream->source);
-        String.new(pStream->length + 1, &(*pDoc)->content);
+        (*doc) = Allocator.alloc(sizeof(struct io_document), INITIALIZED);
+        String.new(0, &(*doc)->source);
+        String.copy((*doc)->source, pStream->source);
+        String.new(pStream->length, &(*doc)->content);
 
-        char *ndx = (*pDoc)->content;
-        int pos = ndx - (*pDoc)->content;
+        char *ndx = (*doc)->content;
+        int pos = ndx - (*doc)->content;
         while ((*ndx = (char)fgetc(pStream->fstream)) != EOF)
         {
             ++ndx;
@@ -95,11 +96,18 @@ static bool doc_load(stream pStream, document *pDoc)
         *ndx = '\0';
     }
 
-    return (*pDoc) != NULL;
+    return (*doc) != NULL;
+}
+static bool doc_dispose(document doc)
+{
+    String.free(doc->source);
+    String.free(doc->content);
+    return Allocator.dealloc(doc);
 }
 
 const struct Document_T Document = {
     .load = &doc_load,
+    .dispose = &doc_dispose,
 };
 
 const struct IO_Indexer Indexer = {
