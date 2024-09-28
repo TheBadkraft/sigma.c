@@ -115,20 +115,20 @@ static bool parser_load_ruleset()
 	pIndexer->tokenize(CODEX->definition, &pToken);
 
 	// #if DEBUG
-	// string word = NULL;
-	// token ptr = pToken;
-	// printf("\n");
-	// while (ptr)
-	// {
-	// 	Token.word(ptr, &word);
-	// 	if (word == NULL)
-	// 	{
-	// 		break;
-	// 	}
-	// 	printf("%s%s", *word != '\0' ? word : "", *word == '\n' ? "" : "\n");
-	// 	ptr = ptr->next;
-	// }
-	// String.free(word);
+	string word = NULL;
+	token ptr = pToken;
+	printf("\n");
+	while (ptr)
+	{
+		Token.word(ptr, &word);
+		if (word == NULL)
+		{
+			break;
+		}
+		printf("%s%s", *word != '\0' ? word : "", *word == '\n' ? "" : "\n");
+		ptr = ptr->next;
+	}
+	String.free(word);
 	// #endif
 
 	/*
