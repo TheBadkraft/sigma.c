@@ -1,0 +1,25 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "sigc.net",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/sigma.c/sigma.c.csproj",
+        },
+        {
+            "name": "sigc",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/sigma.c/bin/Debug/net8.0/sigma.c.dll",
+            "args": [
+                "Mandy",
+                "Meredith",
+                "Ethan"
+            ]
+        }
+    ]
+}

@@ -4,5 +4,7 @@
 			"path": "c_sharp"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"dotnet.defaultSolution": "sigma.sln"
+	}
 }
