@@ -1,4 +1,8 @@
-<program>   ::= <function>
-<function>  ::= "int" <id> "(" ")" "{" <statement> "}"
-<statement> ::= "return" <expr> ";"
-<expr>      ::= <int>
+##  Sigma.C
+##  Release:  Sugar_Lily
+##  Version:  0.06
+##
+<prog>  ::= <func>
+<func>  ::= "int" "main" "(" ")" "{" <stmt> "}"
+<stmt>  ::= "return" <expr> ";"
+<expr>  ::= "0"

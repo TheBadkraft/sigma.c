@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "dotnet",
+			"task": "build /home/badkraft/repos/sigma/sigma.c/src/sigma.c/sigma.c.csproj",
+			"file": "/home/badkraft/repos/sigma/sigma.c/src/sigma.c/sigma.c.csproj",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"label": "build sigma.c"
+		}
+	]
+}

@@ -1,10 +1,8 @@
 {
 	"folders": [
 		{
-			"path": "c_sharp"
+			"path": "./"
 		}
 	],
-	"settings": {
-		"dotnet.defaultSolution": "sigma.sln"
-	}
+	"settings": {}
 }
