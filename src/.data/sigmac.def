@@ -1,8 +1,26 @@
-##  Sigma.C
-##  Release:  Sugar_Lily
-##  Version:  0.06
-##
-<prog>  ::= <func>
-<func>  ::= "int" "main" "(" ")" "{" <stmt> "}"
-<stmt>  ::= "return" <expr> ";"
-<expr>  ::= "0"
+## Sigma.C
+## Release: Sugar_Lilly
+## Version: 0.06a
+
+## Declarations
+<declaration> = <type> <identifier> ["=" <expression>]
+
+## Expressions
+<expression> = <identifier> | <literal> | <expression> <operator> <expression>
+<operator> = "+" | "-" | "*" | "/" | "%"
+
+## Literals
+<literal> = <integer_literal> | <float_literal>
+<integer_literal> = <digit> { <digit> }
+<float_literal> = <digit> { <digit> } "." { <digit> } [ <exponent> ]
+<exponent> = ("e" | "E") ["+" | "-"] <digit> { <digit> }
+
+## Types
+<type> = "int" | "float"
+
+## Identifiers
+<identifier> = <letter> | "_" { <letter> | <digit> | "_" }
+
+## Lexical Elements
+<letter> = "A".."Z" | "a".."z"
+<digit> = "0".."9"
