@@ -114,7 +114,7 @@ internal static class CodexI
             if (rule.Any())
             {
                 //  creates and adds rule to ruleset
-                codex.RuleSet.Add(rule.ToArray());
+                codex.RuleSet.Add([.. rule]);
                 rule.Clear();
             }
         }

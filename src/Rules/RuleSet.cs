@@ -1,13 +1,5 @@
 
 
-public class Codex
-{
-    internal string Name => "Sigma.C";
-    internal string Definition { get; init; }
-    internal IndexTable Index { get; set; }
-    internal RuleSet RuleSet { get; set; }
-}
-
 public class RuleSet
 {
     private readonly Dictionary<string, Rule> ruleset = new();
@@ -25,15 +17,14 @@ public class RuleSet
                 - second member is "="
                 - remaining members are valid composition
         */
-        var rule = Rule.Create(indices[i++].Word());
+        var rule = RuleFactory.Create(indices[i++].Word());
         ++i;
         // rule.Compose(indices.TakeWhile((n, e) => e > i).ToArray());    
 
         if (rule != null)
         {
-            rule.Compose(indices[i..]);
+            ruleset.Add(rule.Name, rule);
         }
-        // ruleset.Add(name, rule);
 
     }
 }

@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="../.data/sigmac.def" />
+    <EmbeddedResource Include=".data/sigmac.def" />
 
     <Using Include="System.Reflection" />
   </ItemGroup>

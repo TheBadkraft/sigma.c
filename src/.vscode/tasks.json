@@ -3,8 +3,8 @@
 	"tasks": [
 		{
 			"type": "dotnet",
-			"task": "build /home/badkraft/repos/sigma/sigma.c/src/sigma.c/sigma.c.csproj",
-			"file": "/home/badkraft/repos/sigma/sigma.c/src/sigma.c/sigma.c.csproj",
+			"task": "build /home/badkraft/repos/sigma/sigma.c/src/sigma.c.csproj",
+			"file": "/home/badkraft/repos/sigma/sigma.c/src/sigma.c.csproj",
 			"group": {
 				"kind": "build",
 				"isDefault": true

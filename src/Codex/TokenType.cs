@@ -1,4 +1,4 @@
-public enum NodeType
+public enum TokenType
 {
     Unknown,
     Program,
