@@ -4,11 +4,18 @@ public class Rule
 {
     internal static class Types
     {
+        internal const string DECLARATION = "declaration";
+        internal const string EXPRESSION = "expression";
+        internal const string OPERATOR = "operator";
+        internal const string LITERAL = "literal";
+        internal const string INTEGER_LITERAL = "integer_literal";
+        internal const string FLOAT_LITERAL = "float_literal";
+        internal const string EXPONENT = "exponent";
+        internal const string TYPE = "type";
+        internal const string IDENTIFIER = "identifier";
+        internal const string LETTER = "letter";
+        internal const string DIGIT = "digit";
 
-        internal const string PROGRAM = "PROG";
-        internal const string FUNCTION = "FUNC";
-        internal const string STATEMENT = "STMT";
-        internal const string EXPRESSION = "EXPR";
     }
 
     internal string Name { get; set; }
@@ -21,24 +28,10 @@ public class Rule
         {
             switch (name)
             {
-                case Types.PROGRAM:
+                case Types.DECLARATION:
                     rule = new()
                     {
                         Type = NodeType.Program
-                    };
-
-                    break;
-                case Types.FUNCTION:
-                    rule = new()
-                    {
-                        Type = NodeType.Function
-                    };
-
-                    break;
-                case Types.STATEMENT:
-                    rule = new()
-                    {
-                        Type = NodeType.Statement
                     };
 
                     break;
@@ -49,11 +42,79 @@ public class Rule
                     };
 
                     break;
+                case Types.OPERATOR:
+                    rule = new()
+                    {
+                        Type = NodeType.Operator
+                    };
+
+                    break;
+                case Types.LITERAL:
+                    rule = new()
+                    {
+                        Type = NodeType.Literal
+                    };
+
+                    break;
+                case Types.INTEGER_LITERAL:
+                    rule = new()
+                    {
+                        Type = NodeType.IntegerLiteral
+                    };
+
+                    break;
+                case Types.FLOAT_LITERAL:
+                    rule = new()
+                    {
+                        Type = NodeType.FloatLiteral
+                    };
+
+                    break;
+                case Types.EXPONENT:
+                    rule = new()
+                    {
+                        Type = NodeType.Exponent
+                    };
+
+                    break;
+                case Types.TYPE:
+                    rule = new()
+                    {
+                        Type = NodeType.Type
+                    };
+
+                    break;
+                case Types.IDENTIFIER:
+                    rule = new()
+                    {
+                        Type = NodeType.Identifier
+                    };
+
+                    break;
+                case Types.LETTER:
+                    rule = new()
+                    {
+                        Type = NodeType.Letter
+                    };
+
+                    break;
+                case Types.DIGIT:
+                    rule = new()
+                    {
+                        Type = NodeType.Digit
+                    };
+
+                    break;
                 default:
                     //  error condition
                     break;
             }
         }
+        else if (name.StartsWith("##"))
+        {
+            return rule;
+        }
+
         rule.SetName(name);
 
         return rule;
@@ -63,10 +124,17 @@ public class Rule
 internal static class RuleI
 {
     static Dictionary<string, string> nameLookup = new() {
-            { Rule.Types.PROGRAM, "PROGRAM" },
-            { Rule.Types.FUNCTION, "FUNCTION"},
-            { Rule.Types.STATEMENT, "STATEMENT"},
-            { Rule.Types.EXPRESSION, "EXPRESSION" }
+            { Rule.Types.DECLARATION, "PROGRAM" },
+            { Rule.Types.EXPRESSION, "EXPRESSION" },
+            { Rule.Types.OPERATOR, "OPERATOR"},
+            { Rule.Types.LITERAL, "LITERAL"},
+            { Rule.Types.INTEGER_LITERAL, "INT_LITERAL"},
+            { Rule.Types.FLOAT_LITERAL, "FLT_LITERAL"},
+            { Rule.Types.EXPONENT, "EXPONENT"},
+            { Rule.Types.TYPE, "TYPE"},
+            { Rule.Types.IDENTIFIER, "IDENTIFIER"},
+            { Rule.Types.LETTER, "LETTER"},
+            { Rule.Types.DIGIT, "DIGIT"},
     };
 
     internal static string SetName(this Rule rule, string name)
@@ -74,8 +142,7 @@ internal static class RuleI
         //  valid name
         name = name
             .Replace("<", string.Empty)
-            .Replace(">", string.Empty)
-            .ToUpper();
+            .Replace(">", string.Empty);
 
         return nameLookup[name];
     }

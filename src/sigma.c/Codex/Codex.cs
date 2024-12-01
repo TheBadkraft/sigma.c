@@ -22,7 +22,7 @@ public class RuleSet
         /*
             ASSUMPTIONS:
                 - first member is rule name
-                - second member is "::="
+                - second member is "="
                 - remaining members are valid composition
         */
         var rule = Rule.Create(indices[i++].Word());

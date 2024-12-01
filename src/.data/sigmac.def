@@ -1,6 +1,6 @@
 ## Sigma.C
 ## Release: Sugar_Lilly
-## Version: 0.06a
+## Version: 0.06
 
 ## Declarations
 <declaration> = <type> <identifier> ["=" <expression>]

@@ -2,7 +2,15 @@ public enum NodeType
 {
     Unknown,
     Program,
-    Function,
-    Statement,
-    Expression
+    Declaration,
+    Expression,
+    Operator,
+    Literal,
+    IntegerLiteral,
+    FloatLiteral,
+    Exponent,
+    Type,
+    Identifier,
+    Letter,
+    Digit
 }
