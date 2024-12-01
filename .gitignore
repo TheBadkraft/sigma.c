@@ -50,7 +50,5 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-/bin
-/obj
-/obj/Debug/net8.0
-*.cache
+bin/
+obj/
